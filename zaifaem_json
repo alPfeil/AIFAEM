@@ -1,0 +1,12 @@
+@EndUserText.label : 'JSON Data'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zaifaem_json {
+
+  key mandt : mandt not null;
+  msgguid   : guid_32;
+  json_data : abap.string(0);
+
+}
