@@ -1,0 +1,18 @@
+*&---------------------------------------------------------------------*
+*& Report ZAIF_AEM_DISPLAY_JSON
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zaif_aem_display_json.
+
+PARAMETERS
+p_guid TYPE guid_32.
+
+START-OF-SELECTION.
+
+  SELECT json_data FROM zaifaem_json WHERE
+   msgguid = @p_guid
+    INTO @DATA(gv_json) UP TO 1 ROWS.
+  ENDSELECT.
+
+  cl_demo_output=>display_json( gv_json ).
