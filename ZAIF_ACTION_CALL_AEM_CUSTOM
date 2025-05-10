@@ -72,11 +72,9 @@ FUNCTION zaif_action_call_aem_custom.
   CALL FUNCTION '/AIF/UTIL_ADD_MSG'
     EXPORTING
       msgty      = 'S'
-      msgid      = '/AIF/MES'
-      msgno      = '000'
-      msgv1      = |Msg with GUID |
-      msgv2      = lv_guid
-      msgv3      = |persisted into zaifaem_json|
+      msgid      = 'ZAIF_AEM_MESSAGES'
+      msgno      = '001'
+      msgv1      = lv_guid
     TABLES
       return_tab = return_tab.
 
