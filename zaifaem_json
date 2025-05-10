@@ -5,8 +5,8 @@
 @AbapCatalog.dataMaintenance : #RESTRICTED
 define table zaifaem_json {
 
-  key mandt : mandt not null;
-  msgguid   : guid_32;
-  json_data : abap.string(0);
+  key mandt   : mandt not null;
+  key msgguid : guid_32 not null;
+  json_data   : abap.string(0);
 
 }
