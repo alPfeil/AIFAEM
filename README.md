@@ -1,2 +1,3 @@
 # AIFAEM
-Custom Artifacts for AIFAEM Extensibility
+
+This repository stores custom code to extend AIFAEM with more functionality.
