@@ -1,0 +1,195 @@
+FUNCTION zaif_action_call_aem_custom.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(TESTRUN) TYPE  C
+*"     REFERENCE(SENDING_SYSTEM) TYPE  /AIF/AIF_BUSINESS_SYSTEM_KEY
+*"       OPTIONAL
+*"  TABLES
+*"      RETURN_TAB STRUCTURE  BAPIRET2
+*"  CHANGING
+*"     REFERENCE(DATA)
+*"     REFERENCE(CURR_LINE)
+*"     REFERENCE(SUCCESS) TYPE  /AIF/SUCCESSFLAG
+*"     REFERENCE(OLD_MESSAGES) TYPE  /AIF/BAL_T_MSG
+*"----------------------------------------------------------------------
+
+  DATA: lv_json          TYPE string,
+        lv_status_code   TYPE i,
+        lv_status_reason TYPE string,
+        lr_http_client   TYPE REF TO if_http_client,
+        lv_uri           TYPE string,
+        lv_ns            TYPE /aif/ns,
+        lv_if            TYPE /aif/ifname,
+        lv_ifversion     TYPE /aif/ifversion,
+        lv_guid          TYPE /aif/sxmssmguid,
+        ls_json          TYPE zaifaem_json.
+
+  FIELD-SYMBOLS: <ls_data> TYPE any.
+  FIELD-SYMBOLS: <ls_controller> TYPE /aif/aem_controller.
+  FIELD-SYMBOLS: <lv_header_name> TYPE any.
+  FIELD-SYMBOLS: <lv_header_value> TYPE any.
+  FIELD-SYMBOLS: <ls_index_data>  TYPE any.
+
+  ASSIGN COMPONENT 'DATA' OF STRUCTURE data TO <ls_data>.
+  ASSERT sy-subrc = 0. "data structure must contain field 'DATA'
+
+  ASSIGN COMPONENT 'CONTROLLER' OF STRUCTURE data TO <ls_controller>.
+  ASSERT sy-subrc = 0. "data structure must contain field 'CONTROLLER' of type /aif/aem_controller
+
+  FIELD-SYMBOLS <lt_http_headers> TYPE ANY TABLE.
+  ASSIGN COMPONENT 'HTTP_HEADERS' OF STRUCTURE data TO <lt_http_headers>.
+
+  SELECT * FROM /aif/name_map WHERE name_mapping_id = @<ls_controller>-name_mapping_id INTO TABLE @DATA(lt_aif_aem_name_ma).
+
+  DATA(lt_name_mappings) = CORRESPONDING /ui2/cl_json=>name_mappings( lt_aif_aem_name_ma ).
+
+  "Check if JSON Serialization is needed---------------------------------------
+  "get type of Data
+  DATA(lo_descr) = cl_abap_typedescr=>describe_by_data_ref( REF #( <ls_data> ) ).
+
+  IF lo_descr->type_kind = cl_abap_typedescr=>typekind_string.
+    lv_json = <ls_data>.
+  ELSE.
+    lv_json = /ui2/cl_json=>serialize(
+        EXPORTING
+          data             = <ls_data>
+          pretty_name = /ui2/cl_json=>pretty_mode-camel_case
+          name_mappings    = lt_name_mappings  ).
+  ENDIF.
+  "/Check if JSON Serialization is needed--------------------------------------
+
+  "Persist JSON-----------------------------
+  CALL FUNCTION '/AIF/FILE_GET_GLOBALS'
+    IMPORTING
+      ximsgguid = lv_guid.
+
+  ls_json-msgguid = lv_guid.
+  ls_json-json_data = lv_json.
+
+  MODIFY zaifaem_json FROM ls_json.
+
+  CALL FUNCTION '/AIF/UTIL_ADD_MSG'
+    EXPORTING
+      msgty      = 'S'
+      msgid      = '/AIF/MES'
+      msgno      = '000'
+      msgv1      = |Msg with GUID |
+      msgv2      = lv_guid
+      msgv3      = |persisted into zaifaem_json|
+    TABLES
+      return_tab = return_tab.
+
+  "/Persist JSON----------------------------
+
+  cl_http_client=>create_by_destination(
+    EXPORTING
+      destination              = <ls_controller>-rfc_dest
+    IMPORTING
+      client = lr_http_client                     " HTTP Client Abstraction
+    EXCEPTIONS
+      argument_not_found       = 1                " Connection Parameter (Destination) Not Available
+      destination_not_found    = 2                " Destination not found
+      destination_no_authority = 3                " No Authorization to Use HTTP Destination
+      plugin_not_active        = 4                " HTTP/HTTPS communication not available
+      internal_error           = 5                " Internal error (e.g. name too long)
+      OTHERS                   = 6
+  ).
+
+  IF sy-subrc <> 0.
+    APPEND VALUE #(  id = sy-msgid number = sy-msgno type = sy-msgty
+    message_v1 = sy-msgv1 message_v2 = sy-msgv2 message_v3 = sy-msgv3 message_v4 = sy-msgv4 ) TO return_tab.
+    APPEND VALUE #(  id = '/AIF/AEM_MESSAGES' number = '006' type = 'E' ) TO return_tab.
+  ENDIF.
+
+  lr_http_client->request->set_header_field( name = 'Content-Type'              ##NO_TEXT
+                                            value = 'application/json' ).
+
+  "Additional Headers-------------------------------------------------------------
+  IF <lt_http_headers> IS ASSIGNED. "Optional
+    LOOP AT <lt_http_headers> ASSIGNING FIELD-SYMBOL(<ls_header>).
+
+      ASSIGN COMPONENT 'HEADER_NAME' OF STRUCTURE <ls_header> TO <lv_header_name>.
+      ASSERT sy-subrc = 0.
+
+      ASSIGN COMPONENT 'HEADER_VALUE' OF STRUCTURE <ls_header> TO <lv_header_value>.
+      ASSERT sy-subrc = 0.
+
+      lr_http_client->request->set_header_field( name = <lv_header_name>
+                                              value = <lv_header_value> ).
+    ENDLOOP.
+  ENDIF.
+  "/Additional Headers------------------------------------------------------------
+
+  lr_http_client->request->set_method( 'POST' ).
+
+  lr_http_client->request->set_cdata(
+     data = lv_json ).
+
+  IF <ls_controller>-uri IS INITIAL.
+    CONCATENATE '/Topic/' <ls_controller>-topic INTO lv_uri.
+  ELSE.
+    lv_uri = <ls_controller>-uri.
+  ENDIF.
+
+  cl_http_utility=>set_request_uri(
+    EXPORTING
+      request = lr_http_client->request
+      uri     = lv_uri
+  ).
+
+  lr_http_client->send(
+    EXCEPTIONS
+      http_communication_failure = 1
+      http_invalid_state         = 2
+      http_processing_failed     = 3
+      http_invalid_timeout       = 4
+      OTHERS                     = 5 ).
+
+  IF sy-subrc <> 0.
+    lr_http_client->get_last_error(
+      IMPORTING
+         code           = DATA(lv_msg_code)
+         message        = DATA(lv_msg)
+         message_class  = DATA(lv_msg_class)
+         message_number = DATA(lv_msg_number)
+    ).
+    APPEND VALUE #( id = lv_msg_class number = lv_msg_number type = 'E' ) TO  return_tab.
+    APPEND VALUE #( id = '/AIF/AEM_MESSAGES' number = '006' type = 'E' ) TO  return_tab.
+    RETURN.
+  ENDIF.
+
+  lr_http_client->receive(
+    EXCEPTIONS
+      http_communication_failure = 1
+      http_invalid_state         = 2
+      http_processing_failed     = 3
+      OTHERS                     = 5 ).
+
+  IF sy-subrc <> 0.
+    lr_http_client->get_last_error(
+      IMPORTING
+         code           = lv_msg_code
+         message        = lv_msg
+         message_class  = lv_msg_class
+         message_number = lv_msg_number
+    ).
+    APPEND VALUE #( id = lv_msg_class number = lv_msg_number type = 'E' ) TO  return_tab.
+    APPEND VALUE #( id = '/AIF/AEM_MESSAGES' number = '006' type = 'E' ) TO  return_tab.
+    RETURN.
+  ENDIF.
+
+  lr_http_client->response->get_status( IMPORTING code = lv_status_code reason = lv_status_reason ).
+
+  IF lv_status_code = 200.
+    APPEND VALUE #( id = '/AIF/AEM_MESSAGES' number = '003' type = 'S' message_v1 = lv_status_code ) TO  return_tab ASSIGNING FIELD-SYMBOL(<ls_bapiret>).
+    CONDENSE <ls_bapiret>-message_v1.
+  ELSE.
+    APPEND VALUE #( id = '/AIF/AEM_MESSAGES' number = '004' type = 'E' message_v1 = lv_status_code message_v2 = lv_status_reason ) TO  return_tab ASSIGNING <ls_bapiret>.
+    CONDENSE <ls_bapiret>-message_v1.
+  ENDIF.
+
+  " close the connection
+  lr_http_client->close( ).
+
+ENDFUNCTION.
