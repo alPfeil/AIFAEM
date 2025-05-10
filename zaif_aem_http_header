@@ -1,0 +1,8 @@
+@EndUserText.label : 'HTTP Header'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+define structure zaif_aem_http_header {
+
+  header_name  : abap.string(0);
+  header_value : abap.string(0);
+
+}
