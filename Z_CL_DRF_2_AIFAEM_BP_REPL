@@ -1,7 +1,6 @@
-class Z_CL_DRF_2_AIFAEM_BP_REPL definition
+class CL_MDG_BS_BP_REL_SERVICE_DRF definition
   public
   inheriting from CL_MDG_BS_BP_SUPER_DRF
-  final
   create public .
 
 public section.
@@ -13,117 +12,163 @@ public section.
   class-data GV_CURRENT_STATE type ABAP_BOOL .
 
   class-methods CLASS_CONSTRUCTOR .
-PROTECTED SECTION.
+protected section.
 
-  CONSTANTS gc_eternal_date TYPE bu_datto VALUE '99991231' ##NO_TEXT.
-  " data MT_BP_SEND type BUS_EI_EXTERN_T .
-  "data MS_RUNTIME_PARAM type DRF_S_RUNTIME_PARAMETER_EXT .
-  "class-data SV_BUSINESS_OBJECT_NAME type MDG_OBJECT_TYPE_CODE_BS value 'MDGBP' ##NO_TEXT.
-  "data MT_BUPA type MDG_BS_BP_T_EXTERN .
-  "data MT_RELATION type MDG_BS_BP_REL_T_EXTERN .
-  " data MT_REL_SEND type BURS_EI_EXTERN_T .
-  "  constants SC_TT_DRF_BP type DRF_REL_OBJECT_TYPE value 'MDG_BS_BP_TT_DRF' ##NO_TEXT.
-  " constants SC_S_DRF_BP type STRING value 'MDG_BS_BP_S_DRF' ##NO_TEXT.
-  " constants SC_EXTRACTOR_CL_SUPPL type SEOCLSNAME value 'CL_MDG_IL_SUPPLIER' ##NO_TEXT.
-  " constants SC_EXTRACTOR_CL_BP type SEOCLSNAME value 'CL_MDG_IL_BP' ##NO_TEXT.
-  "data MT_BP_DRF type MDG_BS_BP_TT_DRF .
-  "class-data SO_BP_ROLE_FILTER type ref to CL_DRF_FILTER_OBJECT .
-  "constants MC_MSGID type SYMSGID value 'MDG_BS_BP_DATAREPL' ##NO_TEXT.
-  "constants SC_CHGID_DELETE type CHAR1 value 'D' ##NO_TEXT.
-  "data MV_COUNT_REL_SKIPPED type I .
+  constants GC_ETERNAL_DATE type BU_DATTO value '99991231' ##NO_TEXT.
+  METHODS get_bp_bupa_outbound RETURNING VALUE(ro_bp_bupa_outbound) TYPE REF TO if_bs_bp_soa_service_impl_out.
+  METHODS get_bp_relship_outbound RETURNING VALUE(ro_bp_relship_outbound) TYPE REF TO if_bs_bp_soa_service_impl_out.
+private section.
 
-  METHODS get_bp_bupa_outbound
-    RETURNING
-      VALUE(ro_bp_bupa_outbound) TYPE REF TO if_bs_bp_soa_service_impl_out .
-  METHODS get_bp_relship_outbound
-    RETURNING
-      VALUE(ro_bp_relship_outbound) TYPE REF TO if_bs_bp_soa_service_impl_out .
-PRIVATE SECTION.
+  data:
+    GT_MSG_LINK type sorted table of MDG_BS_BP_ADMIN_MESSAGE_DATA with unique key objkey .
+*"* private components of class CL_MDG_BS_BP_REL_SERVICE_DRF
+*"* do not include other source files here!!!
+  data MV_RECEIVER_BSKEY type MDG_EXTR_BSKEY .
+  data MT_KEY_MAPPING type MDG_BS_BP_TT_MAPPING_KEYS .
 
-  DATA go_drf_bp TYPE REF TO cl_mdg_bs_bp_rel_service_drf .
-  DATA:
-    gt_msg_link TYPE SORTED TABLE OF mdg_bs_bp_admin_message_data WITH UNIQUE KEY objkey .
-  DATA mv_receiver_bskey TYPE mdg_extr_bskey .
-  DATA mt_key_mapping TYPE mdg_bs_bp_tt_mapping_keys .
+  methods RAISE_DRF_EXCEPTION
+    importing
+      !IR_EXCEPTION type ref to CX_ROOT
+    raising
+      CX_DRF_EXCEPTION .
+  methods ROLE_NODE_FILTER
+    importing
+      !IT_EXTERNAL_CRITERIA type RSDS_TRANGE
+      !IV_IGNORE_FILTER type ABAP_BOOL
+    changing
+      !CT_BS_BP_EXTERN type MDG_BS_BP_T_EXTERN
+    raising
+      CX_DRF_EXCEPTION .
+  methods SAME_REL_PARTNER
+    importing
+      !IS_RELATION type MDG_BS_BP_REL_S_EXTERN
+    returning
+      value(RV_SAME_TARGET_BP) type ABAP_BOOL .
+  methods GET_BP_KEY_MAPPING
+    importing
+      !IV_PARTNER type BU_PARTNER
+    exporting
+      !ES_KEY_MAPPING type MDG_BS_BP_S_MAPPING_KEYS .
+  methods IDENTIFICATION_NODE_FILTER
+    importing
+      !IT_EXTERNAL_CRITERIA type RSDS_TRANGE
+      !IV_IGNORE_FILTER type ABAP_BOOL
+    changing
+      !CT_BS_BP_EXTERN type MDG_BS_BP_T_EXTERN
+    raising
+      CX_DRF_EXCEPTION .
+  methods ADDRESS_USAGE_NODE_FILTER
+    importing
+      !IT_EXTERNAL_CRITERIA type RSDS_TRANGE
+      !IV_IGNORE_FILTER type ABAP_BOOL
+    changing
+      !CT_BS_BP_EXTERN type MDG_BS_BP_T_EXTERN
+    raising
+      CX_DRF_EXCEPTION .
+  methods TAXCAT_NODE_FILTER
+    importing
+      !IT_EXTERNAL_CRITERIA type RSDS_TRANGE
+      !IV_IGNORE_FILTER type ABAP_BOOL
+    changing
+      !CT_BS_BP_EXTERN type MDG_BS_BP_T_EXTERN
+    raising
+      CX_DRF_EXCEPTION .
 
-  METHODS raise_drf_exception
-    IMPORTING
-      !ir_exception TYPE REF TO cx_root
-    RAISING
-      cx_drf_exception .
-  METHODS role_node_filter
-    IMPORTING
-      !it_external_criteria TYPE rsds_trange
-      !iv_ignore_filter     TYPE abap_bool
-    CHANGING
-      !ct_bs_bp_extern      TYPE mdg_bs_bp_t_extern
-    RAISING
-      cx_drf_exception .
-  METHODS same_rel_partner
-    IMPORTING
-      !is_relation             TYPE mdg_bs_bp_rel_s_extern
-    RETURNING
-      VALUE(rv_same_target_bp) TYPE abap_bool .
-  METHODS get_bp_key_mapping
-    IMPORTING
-      !iv_partner     TYPE bu_partner
-    EXPORTING
-      !es_key_mapping TYPE mdg_bs_bp_s_mapping_keys .
-  METHODS identification_node_filter
-    IMPORTING
-      !it_external_criteria TYPE rsds_trange
-      !iv_ignore_filter     TYPE abap_bool
-    CHANGING
-      !ct_bs_bp_extern      TYPE mdg_bs_bp_t_extern
-    RAISING
-      cx_drf_exception .
-  METHODS address_usage_node_filter
-    IMPORTING
-      !it_external_criteria TYPE rsds_trange
-      !iv_ignore_filter     TYPE abap_bool
-    CHANGING
-      !ct_bs_bp_extern      TYPE mdg_bs_bp_t_extern
-    RAISING
-      cx_drf_exception .
-  METHODS taxcat_node_filter
-    IMPORTING
-      !it_external_criteria TYPE rsds_trange
-      !iv_ignore_filter     TYPE abap_bool
-    CHANGING
-      !ct_bs_bp_extern      TYPE mdg_bs_bp_t_extern
-    RAISING
-      cx_drf_exception .
 ENDCLASS.
 
 
 
-CLASS Z_CL_DRF_2_AIFAEM_BP_REPL IMPLEMENTATION.
+CLASS CL_MDG_BS_BP_REL_SERVICE_DRF IMPLEMENTATION.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method Z_CL_DRF_2_AIFAEM_BP_REPL=>CLASS_CONSTRUCTOR
-* +-------------------------------------------------------------------------------------------------+
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method CLASS_CONSTRUCTOR.
-  endmethod.
+METHOD ADDRESS_USAGE_NODE_FILTER.
+
+  DATA: lt_address_usage                    TYPE SORTED TABLE OF MDG_BS_BP_S_TB009 WITH UNIQUE KEY ADR_KIND.
+  DATA: lt_bupa_address                     TYPE bus_ei_bupa_address_t.
+  DATA: lt_bupa_address_usage               TYPE BUS_EI_BUPA_ADDRESSUSAGE_t.
+  DATA: mo_bp_address_usage_filter          TYPE REF TO cl_drf_filter_object.
+  DATA: lx_drf_exception                    TYPE REF TO cx_drf_exception.
+
+  FIELD-SYMBOLS: <ls_bupa_address>          TYPE bus_ei_bupa_address.
+  FIELD-SYMBOLS: <ls_bupa_address_usage>    TYPE bus_ei_bupa_addressusage.
+  FIELD-SYMBOLS: <ls_bs_bp_extern>          TYPE mdg_bs_bp_s_extern.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Protected Method Z_CL_DRF_2_AIFAEM_BP_REPL->GET_BP_BUPA_OUTBOUND
-* +-------------------------------------------------------------------------------------------------+
-* | [<-()] RO_BP_BUPA_OUTBOUND            TYPE REF TO IF_BS_BP_SOA_SERVICE_IMPL_OUT
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method GET_BP_BUPA_OUTBOUND.
-     ro_bp_bupa_outbound = cl_bp_bupa_si_out=>new( ).
-  endmethod.
+* Segement filter ADDRESS USAGE
+  TRY.
+       mo_bp_address_usage_filter = cl_drf_service_tools=>filter_object_factory(
+              iv_appl            = ms_runtime_param-appl
+              iv_business_system = ms_runtime_param-business_system
+              iv_filter_object   = '98698'
+              iv_outb_impl       = ms_runtime_param-outb_impl
+              io_bal             = ms_runtime_param-bal
+              iv_dlmod           = ms_runtime_param-dlmod
+              iv_runmod          = ms_runtime_param-runmod ).
+
+    CATCH cx_drf_exception INTO lx_drf_exception.
+      RAISE EXCEPTION TYPE cx_drf_exception
+        EXPORTING
+          previous = lx_drf_exception.
+  ENDTRY.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method Z_CL_DRF_2_AIFAEM_BP_REPL->GET_BP_KEY_MAPPING
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IV_PARTNER                     TYPE        BU_PARTNER
-* | [<---] ES_KEY_MAPPING                 TYPE        MDG_BS_BP_S_MAPPING_KEYS
-* +--------------------------------------------------------------------------------------</SIGNATURE>
+* Initialise DRF ADDRESS USAGE filter
+  CALL METHOD mo_bp_address_usage_filter->init_objects
+    EXPORTING
+      iv_use_object_ref = 'X' "=> lt_address_usage is treaten as an reference
+    CHANGING                  "-> apply_filter will directly update into lt_address_usage
+      ct_objects        = lt_address_usage.
+
+
+* Apply filter
+  TRY.
+      CALL METHOD mo_bp_address_usage_filter->apply_filter
+        EXPORTING
+          iv_outb_impl         = ms_runtime_param-outb_impl
+          iv_ignore_filter     = iv_ignore_filter
+          it_external_criteria = it_external_criteria.
+
+    CATCH cx_drf_exception INTO lx_drf_exception.
+      RAISE EXCEPTION TYPE cx_drf_exception
+        EXPORTING
+          previous = lx_drf_exception.
+  ENDTRY.
+
+
+* Modify CT_BS_BP_EXTERN based on filter results
+  LOOP AT ct_bs_bp_extern ASSIGNING <ls_bs_bp_extern>.
+    lt_bupa_address = <ls_bs_bp_extern>-partner-central_data-address-addresses.
+    LOOP AT lt_bupa_address ASSIGNING <ls_bupa_address>.
+      lt_bupa_address_usage = <ls_bupa_address>-data-addr_usage-addr_usages.
+      LOOP AT lt_bupa_address_usage ASSIGNING <ls_bupa_address_usage>.
+        READ TABLE lt_address_usage WITH KEY adr_kind = <ls_bupa_address_usage>-data_key-addresstype TRANSPORTING NO FIELDS.
+        IF sy-subrc NE 0.
+          DELETE lt_bupa_address_usage.
+        ENDIF.
+      ENDLOOP.
+    <ls_bupa_address>-data-addr_usage-addr_usages = lt_bupa_address_usage.
+    ENDLOOP.
+    <ls_bs_bp_extern>-partner-central_data-address-addresses = lt_bupa_address.
+  ENDLOOP.
+
+
+ENDMETHOD.
+
+
+method CLASS_CONSTRUCTOR.
+
+*  sv_tt_drf           = SC_TT_DRF_BP.
+*  sv_s_drf            = SC_S_DRF_BP.
+*  sv_extractor_class  = SC_EXTRACTOR_CL_SUPPL.
+
+endmethod.
+
+
+  METHOD get_bp_bupa_outbound.
+      ro_bp_bupa_outbound = cl_bp_bupa_si_out=>new( ).
+  ENDMETHOD.
+
+
   METHOD get_bp_key_mapping.
     CONSTANTS:
       c_type_code_bp TYPE mdg_object_type_code_bs VALUE '147' ##NO_TEXT,
@@ -218,101 +263,111 @@ CLASS Z_CL_DRF_2_AIFAEM_BP_REPL IMPLEMENTATION.
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Protected Method Z_CL_DRF_2_AIFAEM_BP_REPL->GET_BP_RELSHIP_OUTBOUND
-* +-------------------------------------------------------------------------------------------------+
-* | [<-()] RO_BP_RELSHIP_OUTBOUND         TYPE REF TO IF_BS_BP_SOA_SERVICE_IMPL_OUT
-* +--------------------------------------------------------------------------------------</SIGNATURE>
   METHOD get_bp_relship_outbound.
-    ro_bp_relship_outbound = cl_bp_relship_si_out=>new( ).
-
+      ro_bp_relship_outbound = cl_bp_relship_si_out=>new( ).
   ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method Z_CL_DRF_2_AIFAEM_BP_REPL->IF_DRF_OUTBOUND~ANALYZE_CHANGES_BY_CHG_POINTER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_CHANGE_POINTER              TYPE        DRF_T_BDCP
-* | [<---] ES_STAT_INFO                   TYPE        DRF_S_STAT_INFO
-* | [<-->] CT_CHANGED_OBJECTS             TYPE        SORTED TABLE
-* | [<-->] CT_DELETED_OBJECTS             TYPE        SORTED TABLE(optional)
-* | [!CX!] CX_DRF_ANALYZE_CHANGES
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method IF_DRF_OUTBOUND~ANALYZE_CHANGES_BY_CHG_POINTER.
+METHOD IDENTIFICATION_NODE_FILTER.
+
+  DATA: lt_ident                   TYPE SORTED TABLE OF MDG_BS_BP_S_TB039A WITH UNIQUE KEY TYPE.
+  DATA: lt_bupa_ident              TYPE BUS_EI_BUPA_IDENTIFICATION_T.
+  DATA: mo_bp_ident_filter          TYPE REF TO cl_drf_filter_object.
+  DATA: lx_drf_exception           TYPE REF TO cx_drf_exception.
+  DATA: lt_tb039a                  TYPE STANDARD TABLE OF tb039a.
+  DATA: ls_tb039a                  TYPE tb039a.
+
+  FIELD-SYMBOLS: <ls_bupa_ident>   TYPE BUS_EI_BUPA_IDENTIFICATION.
+  FIELD-SYMBOLS: <ls_bs_bp_extern> TYPE mdg_bs_bp_s_extern.
 
 
-  DATA: ls_bp_s_drf         TYPE mdg_bs_bp_s_drf,
-        lv_relnr            TYPE bu_relnr,
-        lt_change_pointer   TYPE drf_t_bdcp.
+* Segement Filter von IDENTIFICATION
+  TRY.
 
-  FIELD-SYMBOLS: <lc_bdcp>  TYPE drf_s_bdcp.
+      mo_bp_ident_filter = cl_drf_service_tools=>filter_object_factory(
+              iv_appl          = ms_runtime_param-appl
+              iv_business_system = ms_runtime_param-business_system
+              iv_filter_object = '98699'
+              iv_outb_impl     = ms_runtime_param-outb_impl
+              io_bal           = ms_runtime_param-bal
+              iv_dlmod         = ms_runtime_param-dlmod
+              iv_runmod        = ms_runtime_param-runmod ).
 
-  BREAK-POINT ID mdg_bs_bp_super_drf.
-  IF it_change_pointer IS INITIAL.
-    RETURN.
+    CATCH cx_drf_exception INTO lx_drf_exception.
+      RAISE EXCEPTION TYPE cx_drf_exception
+        EXPORTING
+          previous = lx_drf_exception.
+
+  ENDTRY.
+
+* initialise DRF IDENTIFICATION Filter
+  CALL METHOD mo_bp_ident_filter->init_objects
+    EXPORTING
+      iv_use_object_ref = 'X' "=> lt_lt_ident is treaten as an reference
+    CHANGING                  "-> apply_filter will directly update into lt_lt_ident
+      ct_objects        = lt_ident.
+
+
+* Apply Filter
+  TRY.
+      CALL METHOD mo_bp_ident_filter->apply_filter
+        EXPORTING
+          iv_outb_impl         = ms_runtime_param-outb_impl
+          iv_ignore_filter     = iv_ignore_filter
+          it_external_criteria = it_external_criteria.
+
+
+    CATCH cx_drf_exception INTO lx_drf_exception.
+      RAISE EXCEPTION TYPE cx_drf_exception
+        EXPORTING
+          previous = lx_drf_exception.
+
+  ENDTRY.
+
+  IF lines( ct_bs_bp_extern ) GT 0.
+    CALL FUNCTION 'BUP_TB039A_SELECT_ALL'
+      TABLES
+        t_tb039a  = lt_tb039a
+      EXCEPTIONS
+        OTHERS    = 0.
   ENDIF.
 
-*  ms_runtime_param-bal->increase_msg_level(
-*      iv_alsort      = 'ULA'
-*      iv_description = 'ANALYZE_ALE_CHG_POINTER'
-*      ).
-
-
-  lt_change_pointer = it_change_pointer.
-  SORT lt_change_pointer BY cretime DESCENDING.
-
-* IF ms_runtime_param-parallel_active = abap_false .
-  LOOP AT lt_change_pointer ASSIGNING <lc_bdcp>.
-    CASE <lc_bdcp>-tabname.
-      WHEN 'BUT050' OR 'BUT051' OR 'BUT053'.
-        MOVE <lc_bdcp>-cdobjid(12)    TO lv_relnr.
-        MOVE <lc_bdcp>-cdobjid+12(10) TO ls_bp_s_drf-relpartner1.
-        MOVE <lc_bdcp>-cdobjid+22(10) TO ls_bp_s_drf-relpartner2.
-        MOVE <lc_bdcp>-cdobjid+32(8)  TO ls_bp_s_drf-date_to.
-        MOVE <lc_bdcp>-cdobjid+40(6)  TO ls_bp_s_drf-reltyp.
-        MOVE <lc_bdcp>-cdchgid        TO ls_bp_s_drf-cdchgid.
-
-        SELECT SINGLE dftval FROM but050  INTO ls_bp_s_drf-dftval
-          WHERE relnr    = lv_relnr
-            AND partner1 = ls_bp_s_drf-relpartner1
-            AND partner2 = ls_bp_s_drf-relpartner2
-            AND date_to  = ls_bp_s_drf-date_to .
-
-      WHEN 'BUT000'.
-        MOVE <lc_bdcp>-cdobjid TO ls_bp_s_drf-bp_header.
-
-    ENDCASE.
-    IF NOT ls_bp_s_drf IS INITIAL.
-      INSERT ls_bp_s_drf INTO TABLE ct_changed_objects.
-      CLEAR ls_bp_s_drf.
-    ENDIF.
+* Modify CT_BP_EXTERN based on filter results
+  LOOP AT ct_bs_bp_extern ASSIGNING <ls_bs_bp_extern>.
+    lt_bupa_ident = <ls_bs_bp_extern>-partner-central_data-IDENT_NUMBER-IDENT_NUMBERS.
+    LOOP AT lt_bupa_ident ASSIGNING <ls_bupa_ident>.
+      READ TABLE lt_tb039a WITH KEY category = <ls_bupa_ident>-data_key INTO ls_tb039a.
+      READ TABLE lt_ident WITH KEY type = ls_tb039a-type TRANSPORTING NO FIELDS.
+      IF sy-subrc NE 0.
+        DELETE lt_bupa_ident.
+      ENDIF.
+    ENDLOOP.
+    <ls_bs_bp_extern>-partner-central_data-IDENT_NUMBER-IDENT_NUMBERS = lt_bupa_ident.
   ENDLOOP.
 
+ENDMETHOD.
 
 
-*************************************************************************
-**  Return the changes sites.                                        *
-*************************************************************************
-*  ms_runtime_param-bal->decrease_msg_level(
-**    is_stat_info = is_stat_info
-*           ).
-endmethod.
+METHOD if_drf_outbound~analyze_changes_by_chg_pointer.
+
+* call super class method
+*  TRY.
+  CALL METHOD me->analyze_changes_by_chg_pnter
+    EXPORTING
+      it_change_pointer  = it_change_pointer
+    IMPORTING
+      es_stat_info       = es_stat_info
+    CHANGING
+      ct_changed_objects = ct_changed_objects.
+*   CATCH cx_drf_analyze_changes .
+*   CATCH cx_drf_exception .
+*  ENDTRY.
+
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method Z_CL_DRF_2_AIFAEM_BP_REPL->IF_DRF_OUTBOUND~ANALYZE_CHANGES_BY_MDG_CP
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_CHANGE_POINTER              TYPE        MDG_CP_T_CP
-* | [<---] ES_STAT_INFO                   TYPE        DRF_S_STAT_INFO
-* | [<-->] CT_CHANGED_OBJECTS             TYPE        SORTED TABLE
-* | [<-->] CT_DELETED_OBJECTS             TYPE        SORTED TABLE(optional)
-* | [!CX!] CX_DRF_ANALYZE_CHANGES
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method IF_DRF_OUTBOUND~ANALYZE_CHANGES_BY_MDG_CP.
-
- "*** Fill table CT_CHANGED_OBJECTS with object keys from table IT_CHANGE_POINTER
+METHOD if_drf_outbound~analyze_changes_by_mdg_cp.
+*** Fill table CT_CHANGED_OBJECTS with object keys from table IT_CHANGE_POINTER
 *** Implementation new with note 1717424
 
   DATA:
@@ -345,23 +400,15 @@ endmethod.
     ENDIF.
   ENDLOOP.
 
-  endmethod.
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method Z_CL_DRF_2_AIFAEM_BP_REPL->IF_DRF_OUTBOUND~APPLY_NODE_INST_FILTER_MULTI
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_EXTERNAL_CRITERIA           TYPE        RSDS_TRANGE
-* | [--->] IT_FOBJ                        TYPE        DRF_T_FOBJ_IMPL
-* | [--->] IV_IGNORE_FILTER               TYPE        ABAP_BOOL (default =' ')
-* | [<-->] CT_RELEVANT_OBJECTS            TYPE        SORTED TABLE
-* | [<-->] CT_DELETED_OBJECTS             TYPE        SORTED TABLE(optional)
-* | [!CX!] CX_DRF_PROCESS_MESSAGES
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method IF_DRF_OUTBOUND~APPLY_NODE_INST_FILTER_MULTI.
+method IF_DRF_OUTBOUND~ANALYZE_CHANGES_BY_OTHERS.
+endmethod.
 
-   "* Filter the data for the customized nodes
+
+METHOD if_drf_outbound~apply_node_inst_filter_multi.
+* Filter the data for the customized nodes
 
   DATA: lr_badi_supplier TYPE REF TO mdg_bs_supplier_si,
         lx_drf_exception TYPE REF TO cx_drf_exception.
@@ -418,21 +465,19 @@ endmethod.
           previous = lx_drf_exception.
   ENDTRY.
 
-  endmethod.
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method Z_CL_DRF_2_AIFAEM_BP_REPL->IF_DRF_OUTBOUND~ENRICH_FILTER_CRITERIA
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_EXTERNAL_CRITERIA           TYPE        RSDS_TRANGE
-* | [<---] ET_ADD_EXTERNAL_CRITERIA       TYPE        RSDS_TRANGE
-* | [<---] ES_STAT_INFO                   TYPE        DRF_S_STAT_INFO
-* | [!CX!] CX_DRF_ENRICH_FILTER_PARAMETER
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method IF_DRF_OUTBOUND~ENRICH_FILTER_CRITERIA.
+method IF_DRF_OUTBOUND~APPLY_NODE_INST_FILTER_SINGLE.
+endmethod.
 
- "*! Enrich filter criteria.
+
+method IF_DRF_OUTBOUND~BUILD_PARALLEL_PACKAGE.
+endmethod.
+
+
+method IF_DRF_OUTBOUND~ENRICH_FILTER_CRITERIA.
+*! Enrich filter criteria.
 *
 *  Evaluate replication mode
 *
@@ -507,20 +552,12 @@ endmethod.
     ENDIF.
   ENDLOOP.
   gv_current_state = lv_current_state.
- endmethod.
+
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method Z_CL_DRF_2_AIFAEM_BP_REPL->IF_DRF_OUTBOUND~FINALIZE
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_RELEVANT_OBJECTS            TYPE        SORTED TABLE
-* | [--->] IT_ERRONEOUS_OBJECTS           TYPE        SORTED TABLE
-* | [--->] IV_REPEATED_INITIAL_RUN        TYPE        BOOLE_D
-* | [<---] EV_DELETE_CHANGE_POINTER       TYPE        BOOLE_D
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD if_drf_outbound~finalize.
-
-   BREAK-POINT ID mdg_bs_bp_super_drf.
+METHOD if_drf_outbound~finalize.
+  BREAK-POINT ID mdg_bs_bp_super_drf.
 
   CLEAR ev_delete_change_pointer.
 
@@ -552,20 +589,13 @@ endmethod.
     IMPORTING
       ev_delete_change_pointer = ev_delete_change_pointer.
 
-  ENDMETHOD.
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Static Public Method Z_CL_DRF_2_AIFAEM_BP_REPL=>IF_DRF_OUTBOUND~INITIALIZE
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IS_RUNTIME_PARAM               TYPE        DRF_S_RUNTIME_PARAMETER_EXT
-* | [<---] EO_IF_DRF_OUTBOUND             TYPE REF TO IF_DRF_OUTBOUND
-* | [<---] ES_RUNTIME_PARAM_OUT_IMPL      TYPE        DRF_S_RUNTIME_PARAM_OUT_IMPL
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD if_drf_outbound~initialize.
+METHOD if_drf_outbound~initialize.
 
-   DATA: ls_runtime_param  TYPE drf_s_runtime_param_out_impl,
-        lr_drf_bp_serv    TYPE REF TO Z_CL_DRF_2_AIFAEM_BP_REPL.
+  DATA: ls_runtime_param  TYPE drf_s_runtime_param_out_impl,
+        lr_drf_bp_serv    TYPE REF TO CL_MDG_BS_BP_REL_SERVICE_DRF.
 
   BREAK-POINT ID mdg_bs_bp_super_drf.
   CLEAR gv_current_state.
@@ -598,42 +628,16 @@ endmethod.
 *  es_runtime_param_out_impl-SUPPRESS_APPLY_FILTER = 'X' .
   eo_if_drf_outbound = lr_drf_bp_serv .
 
-  ENDMETHOD.
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method Z_CL_DRF_2_AIFAEM_BP_REPL->IF_DRF_OUTBOUND~MAP_DATA2MESSAGE
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IR_RELEVANT_OBJECT             TYPE REF TO DATA
-* | [--->] IS_BUS_SYS_TECH                TYPE        MDG_S_BUS_SYS_TECH(optional)
-* | [--->] IV_DEL_OBJECT                  TYPE        ABAP_BOOL(optional)
-* | [!CX!] CX_DRF_PROCESS_MESSAGES
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method IF_DRF_OUTBOUND~MAP_DATA2MESSAGE.
+method IF_DRF_OUTBOUND~MAP_DATA2MESSAGE.
+endmethod.
 
 
-
-  endmethod.
-
-
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method Z_CL_DRF_2_AIFAEM_BP_REPL->IF_DRF_OUTBOUND~READ_COMPLETE_DATA
-* +-------------------------------------------------------------------------------------------------+
-* | [<-->] CT_RELEVANT_OBJECTS            TYPE        SORTED TABLE
-* | [!CX!] CX_DRF_PROCESS_MESSAGES
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method IF_DRF_OUTBOUND~READ_COMPLETE_DATA.
-
-*    go_drf_bp->IF_DRF_OUTBOUND~read_complete_data(
-*      CHANGING
-*        ct_relevant_objects =  ct_relevant_objects                " Object to Be Sent
-*    ).
-*    CATCH cx_drf_process_messages. " Send Exceptions during Service/Message
-*    CATCH cx_drf_exception.        " Root Class for Exceptions
-
-DATA:
+METHOD if_drf_outbound~read_complete_data.
+*! Read all records that shall be replicated later.
+  DATA:
     lo_extrct_obj             TYPE REF TO object,
     lo_extractor              TYPE REF TO cl_mdg_il_bp, "extractor of the super class
     dref_bp_t                 TYPE REF TO data, " e.g. mdg_bs_bp_tt_drf
@@ -901,257 +905,242 @@ DATA:
       gv_current_state = abap_false.
   ENDIF.
 
-  endmethod.
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Public Method Z_CL_DRF_2_AIFAEM_BP_REPL->IF_DRF_OUTBOUND~SEND_MESSAGE
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IS_FILE_INFO                   TYPE        DRF_S_FILE_INFO(optional)
-* | [--->] IV_OBJECT_COUNT                TYPE        DRF_PACKAGE_SIZE(optional)
-* | [--->] IS_BUS_SYS_TECH                TYPE        MDG_S_BUS_SYS_TECH(optional)
-* | [--->] IV_SKIP_AUTH                   TYPE        BOOLEAN(optional)
-* | [<---] ET_FILE_DATA                   TYPE        DRF_T_FILE_OI_CONTENT
-* | [<---] ET_MESSAGE                     TYPE        DRF_T_MESSAGE
-* | [<-->] CT_OBJ_REP_STA                 TYPE        DRF_T_OBJ_REP_STA_FULL(optional)
-* | [!CX!] CX_DRF_PROCESS_MESSAGES
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  METHOD if_drf_outbound~send_message.
+METHOD if_drf_outbound~send_message.
 
-    DATA lo_bp_bupa_outbound       TYPE REF TO if_bs_bp_soa_service_impl_out.
-    DATA lo_bp_relship_outbound    TYPE REF TO if_bs_bp_soa_service_impl_out.
-    DATA lt_bs_bp_data             TYPE mdg_bs_bp_t_extern.
-    DATA ls_bp_s_drf_check_bp      TYPE mdg_bs_bp_s_drf.
-    DATA lt_bs_bp_data_copy        TYPE mdg_bs_bp_t_extern.
-    DATA lt_bs_bp_rel_data         TYPE mdg_bs_bp_rel_t_extern.
-    DATA lv_xi_msg_guid            TYPE sysuuid_x.
-    DATA ls_bp_s_drf               TYPE mdg_bs_bp_s_drf.
-    DATA lv_object_count           TYPE int4.
-    DATA ls_msg_link               TYPE mdg_bs_bp_admin_message_data.
-    DATA lv_send_allowed           TYPE abap_bool.
-    DATA ls_key_mapping            TYPE mdg_bs_bp_s_mapping_keys.
-    DATA lt_key_mapping            TYPE mdg_bs_bp_tt_mapping_keys.
-    DATA lv_lines                  TYPE i.
-    DATA lx_ai_system_fault        TYPE REF TO cx_ai_system_fault.
-    DATA lv_bulk_message_id        TYPE mdg_fnd_bus_doc_msg_id_content.
-    DATA ls_obj_rep_sta            TYPE drf_s_obj_rep_sta_attr.
-    DATA ls_bupa                   TYPE mdg_bs_bp_s_extern.
-    DATA ls_relation               TYPE mdg_bs_bp_rel_s_extern.
-    DATA lt_relation               TYPE mdg_bs_bp_rel_t_extern.
-    DATA lv_obj_rep_index          TYPE i.
-    DATA ls_message                TYPE drf_s_message.
-    DATA lv_own_id                 TYPE bu_partner.
-    DATA lt_msg_link               TYPE SORTED TABLE OF mdg_bs_bp_admin_message_data WITH UNIQUE KEY objkey .
+  DATA lo_bp_bupa_outbound       TYPE REF TO if_bs_bp_soa_service_impl_out.
+  DATA lo_bp_relship_outbound    TYPE REF TO if_bs_bp_soa_service_impl_out.
+  DATA lt_bs_bp_data             TYPE mdg_bs_bp_t_extern.
+  DATA ls_bp_s_drf_check_bp      TYPE mdg_bs_bp_s_drf.
+  DATA lt_bs_bp_data_copy        TYPE mdg_bs_bp_t_extern.
+  DATA lt_bs_bp_rel_data         TYPE mdg_bs_bp_rel_t_extern.
+  DATA lv_xi_msg_guid            TYPE sysuuid_x.
+  DATA ls_bp_s_drf               TYPE mdg_bs_bp_s_drf.
+  DATA lv_object_count           TYPE int4.
+  DATA ls_msg_link               TYPE mdg_bs_bp_admin_message_data.
+  DATA lv_send_allowed           TYPE abap_bool.
+  DATA ls_key_mapping            TYPE mdg_bs_bp_s_mapping_keys.
+  DATA lt_key_mapping            TYPE mdg_bs_bp_tt_mapping_keys.
+  DATA lv_lines                  TYPE i.
+  DATA lx_ai_system_fault        TYPE REF TO cx_ai_system_fault.
+  DATA lv_bulk_message_id        TYPE mdg_fnd_bus_doc_msg_id_content.
+  DATA ls_obj_rep_sta            TYPE drf_s_obj_rep_sta_attr.
+  DATA ls_bupa                   TYPE mdg_bs_bp_s_extern.
+  DATA ls_relation               TYPE mdg_bs_bp_rel_s_extern.
+  DATA lt_relation               TYPE mdg_bs_bp_rel_t_extern.
+  DATA lv_obj_rep_index          TYPE i.
+  DATA ls_message                TYPE drf_s_message.
+  DATA lv_own_id                 TYPE bu_partner.
+  DATA lt_msg_link               TYPE SORTED TABLE OF mdg_bs_bp_admin_message_data WITH UNIQUE KEY objkey .
 
-    DATA ls_aifaem_raw TYPE mdg_bp_bpsuitebulk_rplct_req_m.
-
-    FIELD-SYMBOLS <ls_obj_rep_sta>          TYPE drf_s_obj_rep_sta_attr.
-    FIELD-SYMBOLS <fs_bs_bp_data>           TYPE mdg_bs_bp_s_extern.
-    FIELD-SYMBOLS <ls_message>              TYPE mdg_bs_bp_s_extern.
-    FIELD-SYMBOLS <ls_relation_message>     TYPE mdg_bs_bp_rel_s_extern.
+  FIELD-SYMBOLS <ls_obj_rep_sta>          TYPE drf_s_obj_rep_sta_attr.
+  FIELD-SYMBOLS <fs_bs_bp_data>           TYPE mdg_bs_bp_s_extern.
+  FIELD-SYMBOLS <ls_message>              TYPE mdg_bs_bp_s_extern.
+  FIELD-SYMBOLS <ls_relation_message>     TYPE mdg_bs_bp_rel_s_extern.
 
 
-    CLEAR: et_file_data.
+  CLEAR: et_file_data.
 
-    BREAK-POINT ID mdg_bs_bp_super_drf.
+  BREAK-POINT ID mdg_bs_bp_super_drf.
 
 * check if receiver system is customized as time independent (in this case no invalid records
 * must be replicated)
-    DATA ls_mdg_bus_sys_attr      TYPE mdg_bus_sys_attr.
-    DATA: lv_latest_soap_id TYPE srtm_message_id.
-    SELECT SINGLE * FROM mdg_bus_sys_attr INTO ls_mdg_bus_sys_attr
-             WHERE business_system = ms_runtime_param-business_system
-             AND   business_object = '1405'  "relations
-             AND   comm_channel = '1'  "SOA
-             AND   time_dependency = '1'.  "not time dependent
+  DATA ls_mdg_bus_sys_attr      TYPE mdg_bus_sys_attr.
+  DATA: lv_latest_soap_id TYPE srtm_message_id.
+  SELECT SINGLE * FROM mdg_bus_sys_attr INTO ls_mdg_bus_sys_attr
+           WHERE business_system = ms_runtime_param-business_system
+           AND   business_object = '1405'  "relations
+           AND   comm_channel = '1'  "SOA
+           AND   time_dependency = '1'.  "not time dependent
 
-    LOOP AT ct_obj_rep_sta INTO ls_obj_rep_sta.
+  LOOP AT ct_obj_rep_sta INTO ls_obj_rep_sta.
 
-      lv_obj_rep_index = sy-tabix.
-      MOVE ls_obj_rep_sta-object_id TO ls_bp_s_drf.         "#EC ENHOK
-      IF ls_bp_s_drf-bp_header IS NOT INITIAL.
+    lv_obj_rep_index = sy-tabix.
+    MOVE ls_obj_rep_sta-object_id TO ls_bp_s_drf.           "#EC ENHOK
+    IF ls_bp_s_drf-bp_header IS NOT INITIAL.
 
-        READ TABLE mt_bupa INTO ls_bupa WITH KEY partner-header-object_instance-bpartner = ls_bp_s_drf-bp_header .
-        IF sy-subrc = 0.
-          READ TABLE lt_bs_bp_data TRANSPORTING NO FIELDS
-                                   WITH KEY partner = ls_bupa-partner.
-          IF sy-subrc <> 0.
-            IF cl_mdg_bs_msg_pend_db=>get( )->is_object_pending(
-                iv_own_oitc      = if_mdg_idsc_const=>bpartner_nr
-                iv_own_object_id = |{ ls_bupa-partner-header-object_instance-bpartner ALPHA = OUT }| ) EQ abap_false
-              OR me->ms_runtime_param-dlmod = if_drf_const=>mode_adhoc. "firefighting via manual DRFOUT based replication
-              APPEND ls_bupa TO lt_bs_bp_data.
-            ELSE.
-              ls_obj_rep_sta-repstatus = if_drf_const=>replication_status_to_be_send.
-              MODIFY ct_obj_rep_sta FROM ls_obj_rep_sta.
+      READ TABLE mt_bupa INTO ls_bupa WITH KEY partner-header-object_instance-bpartner = ls_bp_s_drf-bp_header .
+      IF sy-subrc = 0.
+        READ TABLE lt_bs_bp_data TRANSPORTING NO FIELDS
+                                 WITH KEY partner = ls_bupa-partner.
+        IF sy-subrc <> 0.
+          IF cl_mdg_bs_msg_pend_db=>get( )->is_object_pending(
+              iv_own_oitc      = if_mdg_idsc_const=>bpartner_nr
+              iv_own_object_id = |{ ls_bupa-partner-header-object_instance-bpartner ALPHA = OUT }| ) EQ abap_false
+            OR me->ms_runtime_param-dlmod = if_drf_const=>mode_adhoc. "firefighting via manual DRFOUT based replication
+            APPEND ls_bupa TO lt_bs_bp_data.
+          ELSE.
+            ls_obj_rep_sta-repstatus = if_drf_const=>replication_status_to_be_send.
+            MODIFY ct_obj_rep_sta FROM ls_obj_rep_sta.
 
-              cl_mdg_bs_msg_pend_db=>get( )->get_latest_by_own_object_id( EXPORTING iv_own_oitc = if_mdg_idsc_const=>bpartner_nr
-                                                                                    iv_own_object_id   = |{ ls_bupa-partner-header-object_instance-bpartner ALPHA = OUT }|
-                                                                          IMPORTING ev_soap_message_id = lv_latest_soap_id ).
+            cl_mdg_bs_msg_pend_db=>get( )->get_latest_by_own_object_id( EXPORTING iv_own_oitc = if_mdg_idsc_const=>bpartner_nr
+                                                                                  iv_own_object_id   = |{ ls_bupa-partner-header-object_instance-bpartner ALPHA = OUT }|
+                                                                        IMPORTING ev_soap_message_id = lv_latest_soap_id ).
 
-              MESSAGE w071(mdg_bs_bp_datarepl) WITH |{ ls_bupa-partner-header-object_instance-bpartner ALPHA = OUT }| lv_latest_soap_id
-               INTO DATA(lv_dummy).
-              ms_runtime_param-bal->add_msg_sy( ).
+            MESSAGE w071(mdg_bs_bp_datarepl) WITH |{ ls_bupa-partner-header-object_instance-bpartner ALPHA = OUT }| lv_latest_soap_id
+             INTO DATA(lv_dummy).
+            ms_runtime_param-bal->add_msg_sy( ).
 
-              TRY.
-                  cl_mdg_bs_msg_pend_db=>get( )->restart_message(
-                    EXPORTING
-                      iv_own_oitc      = if_mdg_idsc_const=>bpartner_nr
-                      iv_own_object_id = |{ ls_bupa-partner-header-object_instance-bpartner ALPHA = OUT }|
-                  ).
-                CATCH cx_wsm_access_authority cx_wsm_access_monitor cx_soap_area_seq INTO DATA(lx_restart).
-                  "failed restart can be ingnored
-              ENDTRY.
-            ENDIF.
+            TRY.
+                cl_mdg_bs_msg_pend_db=>get( )->restart_message(
+                  EXPORTING
+                    iv_own_oitc      = if_mdg_idsc_const=>bpartner_nr
+                    iv_own_object_id = |{ ls_bupa-partner-header-object_instance-bpartner ALPHA = OUT }|
+                ).
+              CATCH cx_wsm_access_authority cx_wsm_access_monitor cx_soap_area_seq INTO DATA(lx_restart).
+                "failed restart can be ingnored
+            ENDTRY.
           ENDIF.
+        ENDIF.
 
-          "return message data to DRF controller
-          IF ms_runtime_param-return_message EQ abap_true.
-            ls_message-bo_type = if_mdg_otc_const=>bpartner.
-            ls_message-bo_key = ls_bp_s_drf-bp_header.
-            ls_message-target_system = ms_runtime_param-business_system.
+        "return message data to DRF controller
+        IF ms_runtime_param-return_message EQ abap_true.
+          ls_message-bo_type = if_mdg_otc_const=>bpartner.
+          ls_message-bo_key = ls_bp_s_drf-bp_header.
+          ls_message-target_system = ms_runtime_param-business_system.
 
-            CREATE DATA ls_message-message TYPE mdg_bs_bp_s_extern.
-            ASSIGN ls_message-message->* TO <ls_message> CASTING.
-            <ls_message> = ls_bupa.
-            APPEND ls_message TO et_message.
-          ENDIF.
+          CREATE DATA ls_message-message TYPE mdg_bs_bp_s_extern.
+          ASSIGN ls_message-message->* TO <ls_message> CASTING.
+          <ls_message> = ls_bupa.
+          APPEND ls_message TO et_message.
         ENDIF.
       ENDIF.
-      IF ls_bp_s_drf-relpartner1 IS NOT INITIAL.
-        "Check if Relationship has been already sent
-        READ TABLE gt_msg_link INTO ls_msg_link WITH KEY objkey = ls_obj_rep_sta-object_id ##WARN_OK .
-        IF sy-subrc EQ 0.
-          "Update Status and continue with next record
-          READ TABLE ct_obj_rep_sta INDEX lv_obj_rep_index ASSIGNING <ls_obj_rep_sta>.
-          <ls_obj_rep_sta>-msg_link  = ls_msg_link-msg_link.
-          <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
-          CONTINUE.
-        ENDIF.
-        "Check if relationship has been already checked and passed for process
-        READ TABLE lt_bs_bp_rel_data TRANSPORTING NO FIELDS WITH KEY
-          partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1
-          partner_relation-header-object_instance-partner2-bpartner = ls_bp_s_drf-relpartner2
-          partner_relation-header-object_instance-relat_category    = ls_bp_s_drf-reltyp
-          partner_relation-header-object_instance-date_to           = ls_bp_s_drf-date_to
-          partner_relation-header-object_instance-difftypevalue     = ls_bp_s_drf-dftval.
-        IF sy-subrc IS INITIAL.
-          CONTINUE.
-        ENDIF.
-        IF ls_bp_s_drf-date_to IS INITIAL.
-          ls_bp_s_drf-date_to = gc_eternal_date.
-        ENDIF.
+    ENDIF.
+    IF ls_bp_s_drf-relpartner1 IS NOT INITIAL.
+      "Check if Relationship has been already sent
+      READ TABLE gt_msg_link INTO ls_msg_link WITH KEY objkey = ls_obj_rep_sta-object_id ##WARN_OK .
+      IF sy-subrc EQ 0.
+        "Update Status and continue with next record
+        READ TABLE ct_obj_rep_sta INDEX lv_obj_rep_index ASSIGNING <ls_obj_rep_sta>.
+        <ls_obj_rep_sta>-msg_link  = ls_msg_link-msg_link.
+        <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
+        CONTINUE.
+      ENDIF.
+      "Check if relationship has been already checked and passed for process
+      READ TABLE lt_bs_bp_rel_data TRANSPORTING NO FIELDS WITH KEY
+        partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1
+        partner_relation-header-object_instance-partner2-bpartner = ls_bp_s_drf-relpartner2
+        partner_relation-header-object_instance-relat_category    = ls_bp_s_drf-reltyp
+        partner_relation-header-object_instance-date_to           = ls_bp_s_drf-date_to
+        partner_relation-header-object_instance-difftypevalue     = ls_bp_s_drf-dftval.
+      IF sy-subrc IS INITIAL.
+        CONTINUE.
+      ENDIF.
+      IF ls_bp_s_drf-date_to IS INITIAL.
+        ls_bp_s_drf-date_to = gc_eternal_date.
+      ENDIF.
 
 * in case of time independent target send only valid records (except deletions)
-        IF  NOT ls_mdg_bus_sys_attr IS INITIAL
-        AND ls_bp_s_drf-cdchgid <> sc_chgid_delete
-        AND NOT ls_bp_s_drf-date_to IS INITIAL
-        AND ls_bp_s_drf-date_to LT sy-datlo.
-          mv_count_rel_skipped = mv_count_rel_skipped + 1.
-          DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
-          DELETE mt_relation WHERE partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1
-                             AND   partner_relation-header-object_instance-partner2-bpartner = ls_bp_s_drf-relpartner2
-                             AND   partner_relation-header-object_instance-relat_category    = ls_bp_s_drf-reltyp
-                             AND   partner_relation-header-object_instance-date_to           = ls_bp_s_drf-date_to
-                             AND   partner_relation-header-object_instance-difftypevalue     = ls_bp_s_drf-dftval.
-          CONTINUE.
-        ENDIF.
+      IF  NOT ls_mdg_bus_sys_attr IS INITIAL
+      AND ls_bp_s_drf-cdchgid <> sc_chgid_delete
+      AND NOT ls_bp_s_drf-date_to IS INITIAL
+      AND ls_bp_s_drf-date_to LT sy-datlo.
+        mv_count_rel_skipped = mv_count_rel_skipped + 1.
+        DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
+        DELETE mt_relation WHERE partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1
+                           AND   partner_relation-header-object_instance-partner2-bpartner = ls_bp_s_drf-relpartner2
+                           AND   partner_relation-header-object_instance-relat_category    = ls_bp_s_drf-reltyp
+                           AND   partner_relation-header-object_instance-date_to           = ls_bp_s_drf-date_to
+                           AND   partner_relation-header-object_instance-difftypevalue     = ls_bp_s_drf-dftval.
+        CONTINUE.
+      ENDIF.
 
-        IF gv_current_state = abap_true.
-          "send all relationships read for the partner, to ensure
-          "consistency at client side (see CL_MDG_BP_RELSHIP_SI_IN->PROCESS_TD_INBOUND)
-          READ TABLE lt_relation TRANSPORTING NO FIELDS
-            WITH KEY partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1.
-          IF sy-subrc NE 0.
-            REFRESH lt_relation.
-            LOOP AT mt_relation INTO ls_relation
-              WHERE partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1.
-              INSERT ls_relation INTO TABLE lt_relation.
-              DELETE mt_relation.  "avoid double replications
-            ENDLOOP.
-          ENDIF.
-        ELSE.
-          "send only the passed(selected) relationship
-          READ TABLE mt_relation INTO ls_relation
-                WITH KEY  partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1
-                          partner_relation-header-object_instance-partner2-bpartner = ls_bp_s_drf-relpartner2
-                          partner_relation-header-object_instance-relat_category    = ls_bp_s_drf-reltyp
-                          partner_relation-header-object_instance-date_to           = ls_bp_s_drf-date_to
-                          partner_relation-header-object_instance-difftypevalue     = ls_bp_s_drf-dftval.
-          IF sy-subrc = 0.
-            DELETE mt_relation INDEX sy-tabix.
-            IF ls_bp_s_drf-cdchgid = sc_chgid_delete.
-              ls_relation-partner_relation-header-object_task = ls_bp_s_drf-cdchgid.
-            ENDIF.
+      IF gv_current_state = abap_true.
+        "send all relationships read for the partner, to ensure
+        "consistency at client side (see CL_MDG_BP_RELSHIP_SI_IN->PROCESS_TD_INBOUND)
+        READ TABLE lt_relation TRANSPORTING NO FIELDS
+          WITH KEY partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1.
+        IF sy-subrc NE 0.
+          REFRESH lt_relation.
+          LOOP AT mt_relation INTO ls_relation
+            WHERE partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1.
             INSERT ls_relation INTO TABLE lt_relation.
-          ELSEIF ls_bp_s_drf-cdchgid = sc_chgid_delete.  "DRF-manual deletions have no entries in mt_relation
-            ls_relation-partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1.
-            ls_relation-partner_relation-header-object_instance-partner2-bpartner = ls_bp_s_drf-relpartner2.
-            ls_relation-partner_relation-header-object_instance-relat_category    = ls_bp_s_drf-reltyp.
-            ls_relation-partner_relation-header-object_instance-date_to           = ls_bp_s_drf-date_to.
-            ls_relation-partner_relation-header-object_instance-difftypevalue     = ls_bp_s_drf-dftval.
-            ls_relation-partner_relation-header-object_task                       = ls_bp_s_drf-cdchgid.
-            INSERT ls_relation INTO TABLE lt_relation.
-          ENDIF.
+            DELETE mt_relation.  "avoid double replications
+          ENDLOOP.
         ENDIF.
+      ELSE.
+        "send only the passed(selected) relationship
+        READ TABLE mt_relation INTO ls_relation
+              WITH KEY  partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1
+                        partner_relation-header-object_instance-partner2-bpartner = ls_bp_s_drf-relpartner2
+                        partner_relation-header-object_instance-relat_category    = ls_bp_s_drf-reltyp
+                        partner_relation-header-object_instance-date_to           = ls_bp_s_drf-date_to
+                        partner_relation-header-object_instance-difftypevalue     = ls_bp_s_drf-dftval.
+        IF sy-subrc = 0.
+          DELETE mt_relation INDEX sy-tabix.
+          IF ls_bp_s_drf-cdchgid = sc_chgid_delete.
+            ls_relation-partner_relation-header-object_task = ls_bp_s_drf-cdchgid.
+          ENDIF.
+          INSERT ls_relation INTO TABLE lt_relation.
+        ELSEIF ls_bp_s_drf-cdchgid = sc_chgid_delete.  "DRF-manual deletions have no entries in mt_relation
+          ls_relation-partner_relation-header-object_instance-partner1-bpartner = ls_bp_s_drf-relpartner1.
+          ls_relation-partner_relation-header-object_instance-partner2-bpartner = ls_bp_s_drf-relpartner2.
+          ls_relation-partner_relation-header-object_instance-relat_category    = ls_bp_s_drf-reltyp.
+          ls_relation-partner_relation-header-object_instance-date_to           = ls_bp_s_drf-date_to.
+          ls_relation-partner_relation-header-object_instance-difftypevalue     = ls_bp_s_drf-dftval.
+          ls_relation-partner_relation-header-object_task                       = ls_bp_s_drf-cdchgid.
+          INSERT ls_relation INTO TABLE lt_relation.
+        ENDIF.
+      ENDIF.
 
-        LOOP AT lt_relation INTO ls_relation.
+      LOOP AT lt_relation INTO ls_relation.
 
 * in case of time independent target send only valid records (except deletions)
-          IF  NOT ls_mdg_bus_sys_attr IS INITIAL.
-            IF ls_relation-partner_relation-header-object_instance-date_to LT sy-datlo
-            OR ls_relation-partner_relation-central_data-main-data-date_from GT sy-datlo.
+        IF  NOT ls_mdg_bus_sys_attr IS INITIAL.
+          IF ls_relation-partner_relation-header-object_instance-date_to LT sy-datlo
+          OR ls_relation-partner_relation-central_data-main-data-date_from GT sy-datlo.
+            mv_count_rel_skipped = mv_count_rel_skipped + 1.
+            DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
+            CONTINUE.
+          ENDIF.
+        ENDIF.
+
+        "message shall be sent
+        IF ms_runtime_param-return_message EQ abap_false.
+          "Check if partner will be in the target system
+          "PARTNER 1
+          ls_bp_s_drf_check_bp-bp_header = ls_bp_s_drf-relpartner1.
+          READ TABLE ct_obj_rep_sta  WITH KEY object_id = ls_bp_s_drf_check_bp TRANSPORTING NO FIELDS. "#EC ENHOK
+                                                            "#EC WARNOK
+          IF sy-subrc NE 0. " partner will no be send in this loop pass
+            me->check_bp_send(
+              EXPORTING
+                iv_business_system = ms_runtime_param-business_system
+                iv_partner         = ls_bp_s_drf-relpartner1
+              IMPORTING
+                ev_send_allowed    = lv_send_allowed ).
+            IF lv_send_allowed = abap_false.
+             MOVE ls_bp_s_drf-relpartner1 TO lv_own_id.
+              me->get_bp_key_mapping(
+                EXPORTING
+                  iv_partner     = lv_own_id    " Business Partner Number
+                IMPORTING
+                  es_key_mapping = ls_key_mapping ).
+             IF ls_key_mapping IS INITIAL.
               mv_count_rel_skipped = mv_count_rel_skipped + 1.
               DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
               CONTINUE.
+             ENDIF.
             ENDIF.
           ENDIF.
 
-          "message shall be sent
-          IF ms_runtime_param-return_message EQ abap_false.
-            "Check if partner will be in the target system
-            "PARTNER 1
-            ls_bp_s_drf_check_bp-bp_header = ls_bp_s_drf-relpartner1.
-            READ TABLE ct_obj_rep_sta  WITH KEY object_id = ls_bp_s_drf_check_bp TRANSPORTING NO FIELDS. "#EC ENHOK
+          CLEAR ls_bp_s_drf_check_bp.
+          "PARTNER 2
+          ls_bp_s_drf_check_bp-bp_header = ls_bp_s_drf-relpartner2.
+          READ TABLE ct_obj_rep_sta  WITH KEY object_id = ls_bp_s_drf_check_bp TRANSPORTING NO FIELDS. "#EC ENHOK
                                                             "#EC WARNOK
-            IF sy-subrc NE 0. " partner will no be send in this loop pass
-              me->check_bp_send(
-                EXPORTING
-                  iv_business_system = ms_runtime_param-business_system
-                  iv_partner         = ls_bp_s_drf-relpartner1
-                IMPORTING
-                  ev_send_allowed    = lv_send_allowed ).
-              IF lv_send_allowed = abap_false.
-                MOVE ls_bp_s_drf-relpartner1 TO lv_own_id.
-                me->get_bp_key_mapping(
-                  EXPORTING
-                    iv_partner     = lv_own_id    " Business Partner Number
-                  IMPORTING
-                    es_key_mapping = ls_key_mapping ).
-                IF ls_key_mapping IS INITIAL.
-                  mv_count_rel_skipped = mv_count_rel_skipped + 1.
-                  DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
-                  CONTINUE.
-                ENDIF.
-              ENDIF.
-            ENDIF.
+          IF sy-subrc NE 0.
+            me->check_bp_send(
+              EXPORTING
+                iv_business_system = ms_runtime_param-business_system
+                iv_partner         = ls_bp_s_drf-relpartner2
+              IMPORTING
+                ev_send_allowed    = lv_send_allowed ).
 
-            CLEAR ls_bp_s_drf_check_bp.
-            "PARTNER 2
-            ls_bp_s_drf_check_bp-bp_header = ls_bp_s_drf-relpartner2.
-            READ TABLE ct_obj_rep_sta  WITH KEY object_id = ls_bp_s_drf_check_bp TRANSPORTING NO FIELDS. "#EC ENHOK
-                                                            "#EC WARNOK
-            IF sy-subrc NE 0.
-              me->check_bp_send(
-                EXPORTING
-                  iv_business_system = ms_runtime_param-business_system
-                  iv_partner         = ls_bp_s_drf-relpartner2
-                IMPORTING
-                  ev_send_allowed    = lv_send_allowed ).
-
-              IF lv_send_allowed = abap_false.
-                "Read key mapping for Business Partner
+            IF lv_send_allowed = abap_false.
+              "Read key mapping for Business Partner
 *              MOVE ls_bp_s_drf-relpartner1 TO lv_own_id.
 *              me->get_bp_key_mapping(
 *                EXPORTING
@@ -1159,262 +1148,218 @@ DATA:
 *                IMPORTING
 *                  es_key_mapping = ls_key_mapping ).
 *
-                IF ls_key_mapping IS NOT INITIAL.
-                  CLEAR:ls_key_mapping.
-                  MOVE ls_bp_s_drf-relpartner2 TO lv_own_id.
-                  me->get_bp_key_mapping(
-                    EXPORTING
-                      iv_partner     = lv_own_id    " Business Partner Number
-                    IMPORTING
-                      es_key_mapping = ls_key_mapping ).
+              IF ls_key_mapping IS NOT INITIAL.
+                CLEAR:ls_key_mapping.
+                MOVE ls_bp_s_drf-relpartner2 TO lv_own_id.
+                me->get_bp_key_mapping(
+                  EXPORTING
+                    iv_partner     = lv_own_id    " Business Partner Number
+                  IMPORTING
+                    es_key_mapping = ls_key_mapping ).
 
-                  IF ls_key_mapping IS INITIAL.
-                    mv_count_rel_skipped = mv_count_rel_skipped + 1.
-                    DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
-                    CONTINUE. " -> relationship is not added to the replication list
-                  ENDIF.
+                IF ls_key_mapping IS INITIAL.
+                  mv_count_rel_skipped = mv_count_rel_skipped + 1.
+                  DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
+                  CONTINUE. " -> relationship is not added to the replication list
                 ENDIF.
-              ENDIF. " --> relationship can be sent
-            ENDIF.
-
-            "it can happens that the related partners point to the same partner
-            "in the target system. Thus the rel. shouldn't be sent out, to prevent errors
-            IF me->same_rel_partner( ls_relation ) = abap_true.
-              mv_count_rel_skipped = mv_count_rel_skipped + 1.
-              DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
-              CONTINUE.
-            ENDIF.
-
-            "Do not send relation if partner1 or partner2 is pending but deletes have to be send allways
-            IF ls_relation-partner_relation-header-object_task NE sc_chgid_delete AND
-            (    cl_mdg_bs_msg_pend_db=>get( )->is_object_pending(
-                   iv_own_oitc      = if_mdg_idsc_const=>bpartner_nr
-                   iv_own_object_id = |{ ls_relation-partner_relation-header-object_instance-partner1-bpartner ALPHA = OUT }| )
-                 EQ abap_true
-              OR cl_mdg_bs_msg_pend_db=>get( )->is_object_pending(
-                   iv_own_oitc      = if_mdg_idsc_const=>bpartner_nr
-                   iv_own_object_id = |{ ls_relation-partner_relation-header-object_instance-partner2-bpartner ALPHA = OUT }| )
-                 EQ abap_true
-            ).
-              mv_count_rel_skipped = mv_count_rel_skipped + 1.
-              DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
-              CONTINUE.
-            ENDIF.
-
-          ELSE. "return message data to DRF controller
-            ls_message-bo_type = if_mdg_otc_const=>bpartner_relationship. "1405
-            ls_message-bo_key = ls_obj_rep_sta-object_id.
-            ls_message-target_system = ms_runtime_param-business_system.
-
-            CREATE DATA ls_message-message TYPE mdg_bs_bp_rel_s_extern.
-            ASSIGN ls_message-message->* TO <ls_relation_message> CASTING.
-            <ls_relation_message> = ls_relation.
-            APPEND ls_message TO et_message.
+              ENDIF.
+            ENDIF. " --> relationship can be sent
           ENDIF.
-          APPEND ls_relation TO lt_bs_bp_rel_data.
+
+          "it can happens that the related partners point to the same partner
+          "in the target system. Thus the rel. shouldn't be sent out, to prevent errors
+          IF me->same_rel_partner( ls_relation ) = abap_true.
+            mv_count_rel_skipped = mv_count_rel_skipped + 1.
+            DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
+            CONTINUE.
+          ENDIF.
+
+          "Do not send relation if partner1 or partner2 is pending but deletes have to be send allways
+          IF ls_relation-partner_relation-header-object_task NE sc_chgid_delete AND
+          (    cl_mdg_bs_msg_pend_db=>get( )->is_object_pending(
+                 iv_own_oitc      = if_mdg_idsc_const=>bpartner_nr
+                 iv_own_object_id = |{ ls_relation-partner_relation-header-object_instance-partner1-bpartner ALPHA = OUT }| )
+               EQ abap_true
+            OR cl_mdg_bs_msg_pend_db=>get( )->is_object_pending(
+                 iv_own_oitc      = if_mdg_idsc_const=>bpartner_nr
+                 iv_own_object_id = |{ ls_relation-partner_relation-header-object_instance-partner2-bpartner ALPHA = OUT }| )
+               EQ abap_true
+          ).
+            mv_count_rel_skipped = mv_count_rel_skipped + 1.
+            DELETE ct_obj_rep_sta INDEX lv_obj_rep_index.
+            CONTINUE.
+          ENDIF.
+
+        ELSE. "return message data to DRF controller
+          ls_message-bo_type = if_mdg_otc_const=>bpartner_relationship. "1405
+          ls_message-bo_key = ls_obj_rep_sta-object_id.
+          ls_message-target_system = ms_runtime_param-business_system.
+
+          CREATE DATA ls_message-message TYPE mdg_bs_bp_rel_s_extern.
+          ASSIGN ls_message-message->* TO <ls_relation_message> CASTING.
+          <ls_relation_message> = ls_relation.
+          APPEND ls_message TO et_message.
+        ENDIF.
+        APPEND ls_relation TO lt_bs_bp_rel_data.
+      ENDLOOP.
+      REFRESH lt_relation.
+
+    ENDIF. " BP or relationship replication
+
+    CLEAR ls_bp_s_drf.
+  ENDLOOP.
+
+
+  MOVE ms_runtime_param-business_system TO mv_receiver_bskey.
+
+  TRY.
+      "Send business partners
+      IF NOT lt_bs_bp_data IS INITIAL.
+        DELETE ADJACENT DUPLICATES FROM lt_bs_bp_data.
+        lo_bp_bupa_outbound = get_bp_bupa_outbound( ).
+        "A Business Partner in the sender system can correspond to more than one BP in
+        "the receiver system. In this case we must send a separate message for each BP
+        "in the receiver system.
+        lt_bs_bp_data_copy[] = lt_bs_bp_data[].
+        "Loop at the Business Partner table
+        LOOP AT lt_bs_bp_data_copy ASSIGNING <fs_bs_bp_data>.
+          me->get_bp_key_mapping(
+            EXPORTING
+              iv_partner     = <fs_bs_bp_data>-partner-header-object_instance-bpartner    " Business Partner Number
+            IMPORTING
+              es_key_mapping = ls_key_mapping ).   " Combining source key with appendant target keys
+          INSERT ls_key_mapping INTO TABLE lt_key_mapping.
+          "Extend Business Partner table
+          CLEAR lv_lines.
+          lv_lines = lines( ls_key_mapping-receiver_key ).
+          SUBTRACT 1 FROM lv_lines.
+          CHECK lv_lines > 0.
+          DO lv_lines TIMES.
+            APPEND <fs_bs_bp_data> TO lt_bs_bp_data.
+          ENDDO.
         ENDLOOP.
-        REFRESH lt_relation.
 
-      ENDIF. " BP or relationship replication
+        "Store key mapping of BP in the service class
+        lo_bp_bupa_outbound->set_map_keys_for_bp( EXPORTING matching_bp = lt_key_mapping ).
+        "Set the recipient system to support receiver-dependent code list
+        "determination and value mapping
+        lo_bp_bupa_outbound->set_recipient( mv_receiver_bskey ).
 
-      CLEAR ls_bp_s_drf.
-    ENDLOOP.
+        "Execute service if direct send is requested (no return of message data requested)
+        IF ms_runtime_param-return_message EQ abap_false.
+          lo_bp_bupa_outbound->exec_async_out( EXPORTING api_out = REF #( lt_bs_bp_data ) ).
+        ENDIF.
 
+        lv_bulk_message_id = lo_bp_bupa_outbound->get_bulk_message_id( ).
+        "Fill Object Replication Status
+        CLEAR lv_object_count.
+        lv_xi_msg_guid = lo_bp_bupa_outbound->get_xi_msg_guid( ).
+        LOOP AT ct_obj_rep_sta ASSIGNING <ls_obj_rep_sta>.
 
-    MOVE ms_runtime_param-business_system TO mv_receiver_bskey.
+          READ TABLE lo_bp_bupa_outbound->get_message_links( ) INTO ls_msg_link WITH KEY objkey = <ls_obj_rep_sta>-object_id. "#EC ENHOK
+                                                            "#EC WARNOK
+          IF sy-subrc EQ 0.
+            <ls_obj_rep_sta>-msg_link  = ls_msg_link-msg_link.
+            <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
+            lv_object_count = lv_object_count + 1.
+          ELSEIF ms_runtime_param-return_message EQ abap_true
+             AND <ls_obj_rep_sta>-repstatus NE if_drf_const=>replication_status_to_be_send.
+            "in case message isn't send (message data is to be returned to DRF-controller/
+            "application which requests the data without replicating objects, the message
+            "link is supplied by the application and transfered as additional attribute)
+            <ls_obj_rep_sta>-msg_link  = ms_runtime_param-additional_parameter-msg_link.
+            <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
+          ENDIF.
+        ENDLOOP.
+        IF NOT lv_object_count IS INITIAL.
+          ms_runtime_param-bal->add_msg_xi( EXPORTING iv_object_count = lv_object_count
+                                                      iv_xi_msg_guid  = lv_xi_msg_guid
+                                                      iv_outb_impl    = ms_runtime_param-outb_impl  ).
+        ENDIF.
 
-    TRY.
-        "Send business partners
-        IF NOT lt_bs_bp_data IS INITIAL.
-          DELETE ADJACENT DUPLICATES FROM lt_bs_bp_data.
-          lo_bp_bupa_outbound = get_bp_bupa_outbound( ).
-          "A Business Partner in the sender system can correspond to more than one BP in
-          "the receiver system. In this case we must send a separate message for each BP
-          "in the receiver system.
-          lt_bs_bp_data_copy[] = lt_bs_bp_data[].
-          "Loop at the Business Partner table
-          LOOP AT lt_bs_bp_data_copy ASSIGNING <fs_bs_bp_data>.
-            me->get_bp_key_mapping(
-              EXPORTING
-                iv_partner     = <fs_bs_bp_data>-partner-header-object_instance-bpartner    " Business Partner Number
-              IMPORTING
-                es_key_mapping = ls_key_mapping ).   " Combining source key with appendant target keys
-            INSERT ls_key_mapping INTO TABLE lt_key_mapping.
-            "Extend Business Partner table
-            CLEAR lv_lines.
-            lv_lines = lines( ls_key_mapping-receiver_key ).
-            SUBTRACT 1 FROM lv_lines.
-            CHECK lv_lines > 0.
-            DO lv_lines TIMES.
-              APPEND <fs_bs_bp_data> TO lt_bs_bp_data.
-            ENDDO.
+      ENDIF.
+
+      "Send relations
+      IF NOT lt_bs_bp_rel_data  IS INITIAL.
+
+* in case of time independent target adjust validity
+        IF NOT ls_mdg_bus_sys_attr IS INITIAL.
+          LOOP AT lt_bs_bp_rel_data INTO ls_relation
+                                    WHERE partner_relation-central_data-main-data-date_from <> '00010101'
+                                    OR    partner_relation-header-object_instance-date_to   <> gc_eternal_date.
+            ls_relation-partner_relation-central_data-main-data-date_from = '00010101'.
+            ls_relation-partner_relation-header-object_instance-date_to = gc_eternal_date.
+            MODIFY lt_bs_bp_rel_data FROM ls_relation.
           ENDLOOP.
+        ENDIF.
 
-          "Store key mapping of BP in the service class
-          lo_bp_bupa_outbound->set_map_keys_for_bp( EXPORTING matching_bp = lt_key_mapping ).
+        lo_bp_relship_outbound = get_bp_relship_outbound( ).
+        IF lo_bp_relship_outbound IS BOUND.
           "Set the recipient system to support receiver-dependent code list
           "determination and value mapping
-          lo_bp_bupa_outbound->set_recipient( mv_receiver_bskey ).
+          lo_bp_relship_outbound->set_recipient( mv_receiver_bskey ).
+          lo_bp_relship_outbound->set_ref_bulk_message_id( lv_bulk_message_id ).
+          lo_bp_relship_outbound->set_current_state( gv_current_state ).
 
           "Execute service if direct send is requested (no return of message data requested)
           IF ms_runtime_param-return_message EQ abap_false.
-            "Replaced Proxy Call by AIF XML Enabler Call
-            "lo_bp_bupa_outbound->exec_async_out( EXPORTING api_out = REF #( lt_bs_bp_data ) ).
-
-            DATA lo_mapper TYPE REF TO cl_mdg_bp_bupa_si_out.
-            DATA ls_data TYPE mdg_bp_bpsuitebulk_rplct_req_m.
-            DATA lr_bp_data_out    TYPE REF TO data.
-            CREATE OBJECT lo_mapper.
-
-            lo_mapper->do_mapping_outbound(
-              EXPORTING
-                i_api_out = lt_bs_bp_data
-              IMPORTING
-                er_xi_out = lr_bp_data_out
-            ).
-
-            ASSIGN lr_bp_data_out->* TO FIELD-SYMBOL(<bp_data_out>).
-
-            IF <bp_data_out> IS ASSIGNED.
-              ls_aifaem_raw = <bp_data_out>.
-            ELSE.
-              "TBD Error
-            ENDIF.
-
-
-            TRY.
-                CALL METHOD /aif/cl_enabler_xml=>transfer_to_aif
-                  EXPORTING
-                    is_any_structure = ls_aifaem_raw
-                    iv_queue_ns      = 'AEM'
-                    iv_queue_name    = '001'.
-
-              CATCH cx_root INTO DATA(lx_root).
-                MESSAGE lx_root->get_text( ) TYPE 'E'.
-            ENDTRY.
-
+            " Send always deletion before insert to avoid error in inbound
+            SORT lt_bs_bp_rel_data by partner_relation-header-object_task DESCENDING.
+            lo_bp_relship_outbound->exec_async_out( EXPORTING api_out = REF #( lt_bs_bp_rel_data ) ).
+            INSERT LINES OF lo_bp_relship_outbound->get_message_links(  ) INTO TABLE gt_msg_link.
           ENDIF.
-
-          lv_bulk_message_id = lo_bp_bupa_outbound->get_bulk_message_id( ).
-
-
-
 
           "Fill Object Replication Status
           CLEAR lv_object_count.
-          lv_xi_msg_guid = lo_bp_bupa_outbound->get_xi_msg_guid( ).
-          LOOP AT ct_obj_rep_sta ASSIGNING <ls_obj_rep_sta>.
+          lv_xi_msg_guid = lo_bp_relship_outbound->get_xi_msg_guid( ).
 
-            READ TABLE lo_bp_bupa_outbound->get_message_links( ) INTO ls_msg_link WITH KEY objkey = <ls_obj_rep_sta>-object_id. "#EC ENHOK
+          INSERT LINES OF lo_bp_relship_outbound->get_message_links(  ) INTO TABLE lt_msg_link.
+          LOOP AT ct_obj_rep_sta ASSIGNING <ls_obj_rep_sta> WHERE msg_link IS INITIAL.
+            READ TABLE lo_bp_relship_outbound->get_message_links(  ) INTO ls_msg_link WITH KEY objkey = <ls_obj_rep_sta>-object_id. "#EC ENHOK
                                                             "#EC WARNOK
             IF sy-subrc EQ 0.
               <ls_obj_rep_sta>-msg_link  = ls_msg_link-msg_link.
               <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
               lv_object_count = lv_object_count + 1.
-            ELSEIF ms_runtime_param-return_message EQ abap_true
-               AND <ls_obj_rep_sta>-repstatus NE if_drf_const=>replication_status_to_be_send.
+
+* Note 2350887: In case of time-independent target systems the VALID_TO keydate might have been adjusted
+* to 99991231, hence the msg_link-assignment fails and has to be adjusted too
+            ELSEIF NOT ls_mdg_bus_sys_attr IS INITIAL.
+              READ TABLE lt_msg_link INTO ls_msg_link WITH KEY objkey(26) = <ls_obj_rep_sta>-object_id(26). "#EC ENHOK
+                                                            "#EC WARNOK
+              IF sy-subrc EQ 0.
+                DELETE lt_msg_link INDEX sy-tabix.
+                <ls_obj_rep_sta>-msg_link  = ls_msg_link-msg_link.
+                <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
+                lv_object_count = lv_object_count + 1.
+              ENDIF.
+            ENDIF.
+            IF  <ls_obj_rep_sta>-repstatus <> if_drf_const=>replication_status_sent
+            AND ms_runtime_param-return_message EQ abap_true.
               "in case message isn't send (message data is to be returned to DRF-controller/
               "application which requests the data without replicating objects, the message
               "link is supplied by the application and transfered as additional attribute)
               <ls_obj_rep_sta>-msg_link  = ms_runtime_param-additional_parameter-msg_link.
               <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
             ENDIF.
+
           ENDLOOP.
           IF NOT lv_object_count IS INITIAL.
             ms_runtime_param-bal->add_msg_xi( EXPORTING iv_object_count = lv_object_count
                                                         iv_xi_msg_guid  = lv_xi_msg_guid
                                                         iv_outb_impl    = ms_runtime_param-outb_impl  ).
           ENDIF.
-
         ENDIF.
+      ENDIF.
 
-        "Send relations
-        IF NOT lt_bs_bp_rel_data  IS INITIAL.
-
-* in case of time independent target adjust validity
-          IF NOT ls_mdg_bus_sys_attr IS INITIAL.
-            LOOP AT lt_bs_bp_rel_data INTO ls_relation
-                                      WHERE partner_relation-central_data-main-data-date_from <> '00010101'
-                                      OR    partner_relation-header-object_instance-date_to   <> gc_eternal_date.
-              ls_relation-partner_relation-central_data-main-data-date_from = '00010101'.
-              ls_relation-partner_relation-header-object_instance-date_to = gc_eternal_date.
-              MODIFY lt_bs_bp_rel_data FROM ls_relation.
-            ENDLOOP.
-          ENDIF.
-
-          lo_bp_relship_outbound = get_bp_relship_outbound( ).
-          IF lo_bp_relship_outbound IS BOUND.
-            "Set the recipient system to support receiver-dependent code list
-            "determination and value mapping
-            lo_bp_relship_outbound->set_recipient( mv_receiver_bskey ).
-            lo_bp_relship_outbound->set_ref_bulk_message_id( lv_bulk_message_id ).
-            lo_bp_relship_outbound->set_current_state( gv_current_state ).
-
-            "Execute service if direct send is requested (no return of message data requested)
-            IF ms_runtime_param-return_message EQ abap_false.
-              " Send always deletion before insert to avoid error in inbound
-              SORT lt_bs_bp_rel_data BY partner_relation-header-object_task DESCENDING.
-              lo_bp_relship_outbound->exec_async_out( EXPORTING api_out = REF #( lt_bs_bp_rel_data ) ).
-              INSERT LINES OF lo_bp_relship_outbound->get_message_links(  ) INTO TABLE gt_msg_link.
-            ENDIF.
-
-            "Fill Object Replication Status
-            CLEAR lv_object_count.
-            lv_xi_msg_guid = lo_bp_relship_outbound->get_xi_msg_guid( ).
-
-            INSERT LINES OF lo_bp_relship_outbound->get_message_links(  ) INTO TABLE lt_msg_link.
-            LOOP AT ct_obj_rep_sta ASSIGNING <ls_obj_rep_sta> WHERE msg_link IS INITIAL.
-              READ TABLE lo_bp_relship_outbound->get_message_links(  ) INTO ls_msg_link WITH KEY objkey = <ls_obj_rep_sta>-object_id. "#EC ENHOK
-                                                            "#EC WARNOK
-              IF sy-subrc EQ 0.
-                <ls_obj_rep_sta>-msg_link  = ls_msg_link-msg_link.
-                <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
-                lv_object_count = lv_object_count + 1.
-
-* Note 2350887: In case of time-independent target systems the VALID_TO keydate might have been adjusted
-* to 99991231, hence the msg_link-assignment fails and has to be adjusted too
-              ELSEIF NOT ls_mdg_bus_sys_attr IS INITIAL.
-                READ TABLE lt_msg_link INTO ls_msg_link WITH KEY objkey(26) = <ls_obj_rep_sta>-object_id(26). "#EC ENHOK
-                                                            "#EC WARNOK
-                IF sy-subrc EQ 0.
-                  DELETE lt_msg_link INDEX sy-tabix.
-                  <ls_obj_rep_sta>-msg_link  = ls_msg_link-msg_link.
-                  <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
-                  lv_object_count = lv_object_count + 1.
-                ENDIF.
-              ENDIF.
-              IF  <ls_obj_rep_sta>-repstatus <> if_drf_const=>replication_status_sent
-              AND ms_runtime_param-return_message EQ abap_true.
-                "in case message isn't send (message data is to be returned to DRF-controller/
-                "application which requests the data without replicating objects, the message
-                "link is supplied by the application and transfered as additional attribute)
-                <ls_obj_rep_sta>-msg_link  = ms_runtime_param-additional_parameter-msg_link.
-                <ls_obj_rep_sta>-repstatus = if_drf_const=>replication_status_sent.
-              ENDIF.
-
-            ENDLOOP.
-            IF NOT lv_object_count IS INITIAL.
-              ms_runtime_param-bal->add_msg_xi( EXPORTING iv_object_count = lv_object_count
-                                                          iv_xi_msg_guid  = lv_xi_msg_guid
-                                                          iv_outb_impl    = ms_runtime_param-outb_impl  ).
-            ENDIF.
-          ENDIF.
-        ENDIF.
-
-      CATCH cx_ai_system_fault INTO lx_ai_system_fault.
-        raise_drf_exception( lx_ai_system_fault ).
-    ENDTRY.
-
-  ENDMETHOD.
+    CATCH cx_ai_system_fault INTO lx_ai_system_fault.
+     raise_drf_exception( lx_ai_system_fault ).
+  ENDTRY.
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method Z_CL_DRF_2_AIFAEM_BP_REPL->RAISE_DRF_EXCEPTION
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IR_EXCEPTION                   TYPE REF TO CX_ROOT
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method RAISE_DRF_EXCEPTION.
+  METHOD raise_drf_exception.
+
     DATA: lr_last_exception     TYPE REF TO cx_root,
           lr_exception          TYPE REF TO cx_root,
           lv_message_text       TYPE string,
@@ -1471,221 +1416,12 @@ DATA:
     RAISE EXCEPTION TYPE cx_drf_exception
       EXPORTING
         previous = ir_exception.
-  endmethod.
+  ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method Z_CL_DRF_2_AIFAEM_BP_REPL->SAME_REL_PARTNER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IS_RELATION                    TYPE        MDG_BS_BP_REL_S_EXTERN
-* | [<-()] RV_SAME_TARGET_BP              TYPE        ABAP_BOOL
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method SAME_REL_PARTNER.
-    "*! This method checks if the related partners point to the same partner in the client system(s)
-    rv_same_target_bp = abap_false.
-    get_bp_key_mapping(
-      EXPORTING
-        iv_partner     = is_relation-partner_relation-header-object_instance-partner1-bpartner
-      IMPORTING
-        es_key_mapping = DATA(ls_bp1_key_mapping) ).
-    get_bp_key_mapping(
-      EXPORTING
-        iv_partner     = is_relation-partner_relation-header-object_instance-partner2-bpartner
-      IMPORTING
-        es_key_mapping = DATA(ls_bp2_key_mapping) ).
+METHOD role_node_filter.
 
-    LOOP AT ls_bp1_key_mapping-receiver_key INTO DATA(ls_bp1_receiver_key).
-      IF ls_bp1_receiver_key-partner IS NOT INITIAL.
-      READ TABLE ls_bp2_key_mapping-receiver_key TRANSPORTING NO FIELDS
-        WITH KEY partner = ls_bp1_receiver_key-partner.
-      CHECK sy-subrc = 0.
-      rv_same_target_bp = abap_true.
-      RETURN.
-      ENDIF.
-    ENDLOOP.
-
-  endmethod.
-
-
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method Z_CL_DRF_2_AIFAEM_BP_REPL->ADDRESS_USAGE_NODE_FILTER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_EXTERNAL_CRITERIA           TYPE        RSDS_TRANGE
-* | [--->] IV_IGNORE_FILTER               TYPE        ABAP_BOOL
-* | [<-->] CT_BS_BP_EXTERN                TYPE        MDG_BS_BP_T_EXTERN
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method ADDRESS_USAGE_NODE_FILTER.
-     DATA: lt_address_usage                    TYPE SORTED TABLE OF MDG_BS_BP_S_TB009 WITH UNIQUE KEY ADR_KIND.
-  DATA: lt_bupa_address                     TYPE bus_ei_bupa_address_t.
-  DATA: lt_bupa_address_usage               TYPE BUS_EI_BUPA_ADDRESSUSAGE_t.
-  DATA: mo_bp_address_usage_filter          TYPE REF TO cl_drf_filter_object.
-  DATA: lx_drf_exception                    TYPE REF TO cx_drf_exception.
-
-  FIELD-SYMBOLS: <ls_bupa_address>          TYPE bus_ei_bupa_address.
-  FIELD-SYMBOLS: <ls_bupa_address_usage>    TYPE bus_ei_bupa_addressusage.
-  FIELD-SYMBOLS: <ls_bs_bp_extern>          TYPE mdg_bs_bp_s_extern.
-
-
-* Segement filter ADDRESS USAGE
-  TRY.
-       mo_bp_address_usage_filter = cl_drf_service_tools=>filter_object_factory(
-              iv_appl            = ms_runtime_param-appl
-              iv_business_system = ms_runtime_param-business_system
-              iv_filter_object   = '98698'
-              iv_outb_impl       = ms_runtime_param-outb_impl
-              io_bal             = ms_runtime_param-bal
-              iv_dlmod           = ms_runtime_param-dlmod
-              iv_runmod          = ms_runtime_param-runmod ).
-
-    CATCH cx_drf_exception INTO lx_drf_exception.
-      RAISE EXCEPTION TYPE cx_drf_exception
-        EXPORTING
-          previous = lx_drf_exception.
-  ENDTRY.
-
-
-* Initialise DRF ADDRESS USAGE filter
-  CALL METHOD mo_bp_address_usage_filter->init_objects
-    EXPORTING
-      iv_use_object_ref = 'X' "=> lt_address_usage is treaten as an reference
-    CHANGING                  "-> apply_filter will directly update into lt_address_usage
-      ct_objects        = lt_address_usage.
-
-
-* Apply filter
-  TRY.
-      CALL METHOD mo_bp_address_usage_filter->apply_filter
-        EXPORTING
-          iv_outb_impl         = ms_runtime_param-outb_impl
-          iv_ignore_filter     = iv_ignore_filter
-          it_external_criteria = it_external_criteria.
-
-    CATCH cx_drf_exception INTO lx_drf_exception.
-      RAISE EXCEPTION TYPE cx_drf_exception
-        EXPORTING
-          previous = lx_drf_exception.
-  ENDTRY.
-
-
-* Modify CT_BS_BP_EXTERN based on filter results
-  LOOP AT ct_bs_bp_extern ASSIGNING <ls_bs_bp_extern>.
-    lt_bupa_address = <ls_bs_bp_extern>-partner-central_data-address-addresses.
-    LOOP AT lt_bupa_address ASSIGNING <ls_bupa_address>.
-      lt_bupa_address_usage = <ls_bupa_address>-data-addr_usage-addr_usages.
-      LOOP AT lt_bupa_address_usage ASSIGNING <ls_bupa_address_usage>.
-        READ TABLE lt_address_usage WITH KEY adr_kind = <ls_bupa_address_usage>-data_key-addresstype TRANSPORTING NO FIELDS.
-        IF sy-subrc NE 0.
-          DELETE lt_bupa_address_usage.
-        ENDIF.
-      ENDLOOP.
-    <ls_bupa_address>-data-addr_usage-addr_usages = lt_bupa_address_usage.
-    ENDLOOP.
-    <ls_bs_bp_extern>-partner-central_data-address-addresses = lt_bupa_address.
-  ENDLOOP.
-
-  endmethod.
-
-
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method Z_CL_DRF_2_AIFAEM_BP_REPL->IDENTIFICATION_NODE_FILTER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_EXTERNAL_CRITERIA           TYPE        RSDS_TRANGE
-* | [--->] IV_IGNORE_FILTER               TYPE        ABAP_BOOL
-* | [<-->] CT_BS_BP_EXTERN                TYPE        MDG_BS_BP_T_EXTERN
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method IDENTIFICATION_NODE_FILTER.
-
-  DATA: lt_ident                   TYPE SORTED TABLE OF MDG_BS_BP_S_TB039A WITH UNIQUE KEY TYPE.
-  DATA: lt_bupa_ident              TYPE BUS_EI_BUPA_IDENTIFICATION_T.
-  DATA: mo_bp_ident_filter          TYPE REF TO cl_drf_filter_object.
-  DATA: lx_drf_exception           TYPE REF TO cx_drf_exception.
-  DATA: lt_tb039a                  TYPE STANDARD TABLE OF tb039a.
-  DATA: ls_tb039a                  TYPE tb039a.
-
-  FIELD-SYMBOLS: <ls_bupa_ident>   TYPE BUS_EI_BUPA_IDENTIFICATION.
-  FIELD-SYMBOLS: <ls_bs_bp_extern> TYPE mdg_bs_bp_s_extern.
-
-
-* Segement Filter von IDENTIFICATION
-  TRY.
-
-      mo_bp_ident_filter = cl_drf_service_tools=>filter_object_factory(
-              iv_appl          = ms_runtime_param-appl
-              iv_business_system = ms_runtime_param-business_system
-              iv_filter_object = '98699'
-              iv_outb_impl     = ms_runtime_param-outb_impl
-              io_bal           = ms_runtime_param-bal
-              iv_dlmod         = ms_runtime_param-dlmod
-              iv_runmod        = ms_runtime_param-runmod ).
-
-    CATCH cx_drf_exception INTO lx_drf_exception.
-      RAISE EXCEPTION TYPE cx_drf_exception
-        EXPORTING
-          previous = lx_drf_exception.
-
-  ENDTRY.
-
-* initialise DRF IDENTIFICATION Filter
-  CALL METHOD mo_bp_ident_filter->init_objects
-    EXPORTING
-      iv_use_object_ref = 'X' "=> lt_lt_ident is treaten as an reference
-    CHANGING                  "-> apply_filter will directly update into lt_lt_ident
-      ct_objects        = lt_ident.
-
-
-* Apply Filter
-  TRY.
-      CALL METHOD mo_bp_ident_filter->apply_filter
-        EXPORTING
-          iv_outb_impl         = ms_runtime_param-outb_impl
-          iv_ignore_filter     = iv_ignore_filter
-          it_external_criteria = it_external_criteria.
-
-
-    CATCH cx_drf_exception INTO lx_drf_exception.
-      RAISE EXCEPTION TYPE cx_drf_exception
-        EXPORTING
-          previous = lx_drf_exception.
-
-  ENDTRY.
-
-  IF lines( ct_bs_bp_extern ) GT 0.
-    CALL FUNCTION 'BUP_TB039A_SELECT_ALL'
-      TABLES
-        t_tb039a  = lt_tb039a
-      EXCEPTIONS
-        OTHERS    = 0.
-  ENDIF.
-
-* Modify CT_BP_EXTERN based on filter results
-  LOOP AT ct_bs_bp_extern ASSIGNING <ls_bs_bp_extern>.
-    lt_bupa_ident = <ls_bs_bp_extern>-partner-central_data-IDENT_NUMBER-IDENT_NUMBERS.
-    LOOP AT lt_bupa_ident ASSIGNING <ls_bupa_ident>.
-      READ TABLE lt_tb039a WITH KEY category = <ls_bupa_ident>-data_key INTO ls_tb039a.
-      READ TABLE lt_ident WITH KEY type = ls_tb039a-type TRANSPORTING NO FIELDS.
-      IF sy-subrc NE 0.
-        DELETE lt_bupa_ident.
-      ENDIF.
-    ENDLOOP.
-    <ls_bs_bp_extern>-partner-central_data-IDENT_NUMBER-IDENT_NUMBERS = lt_bupa_ident.
-  ENDLOOP.
-
-  endmethod.
-
-
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method Z_CL_DRF_2_AIFAEM_BP_REPL->ROLE_NODE_FILTER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_EXTERNAL_CRITERIA           TYPE        RSDS_TRANGE
-* | [--->] IV_IGNORE_FILTER               TYPE        ABAP_BOOL
-* | [<-->] CT_BS_BP_EXTERN                TYPE        MDG_BS_BP_T_EXTERN
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
-  method ROLE_NODE_FILTER.
-
-     DATA: lt_roles                   TYPE SORTED TABLE OF mdg_bs_bp_s_tb003 WITH UNIQUE KEY role.
+  DATA: lt_roles                   TYPE SORTED TABLE OF mdg_bs_bp_s_tb003 WITH UNIQUE KEY role.
   DATA: lt_bupa_roles              TYPE bus_ei_bupa_roles_t.
   DATA: mo_bp_role_filter          TYPE REF TO cl_drf_filter_object.
   DATA: lx_drf_exception           TYPE REF TO cx_drf_exception.
@@ -1751,17 +1487,36 @@ DATA:
     <ls_bs_bp_extern>-partner-central_data-role-roles = lt_bupa_roles.
   ENDLOOP.
 
-  endmethod.
+ENDMETHOD.
 
 
-* <SIGNATURE>---------------------------------------------------------------------------------------+
-* | Instance Private Method Z_CL_DRF_2_AIFAEM_BP_REPL->TAXCAT_NODE_FILTER
-* +-------------------------------------------------------------------------------------------------+
-* | [--->] IT_EXTERNAL_CRITERIA           TYPE        RSDS_TRANGE
-* | [--->] IV_IGNORE_FILTER               TYPE        ABAP_BOOL
-* | [<-->] CT_BS_BP_EXTERN                TYPE        MDG_BS_BP_T_EXTERN
-* | [!CX!] CX_DRF_EXCEPTION
-* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD same_rel_partner.
+*! This method checks if the related partners point to the same partner in the client system(s)
+    rv_same_target_bp = abap_false.
+    get_bp_key_mapping(
+      EXPORTING
+        iv_partner     = is_relation-partner_relation-header-object_instance-partner1-bpartner
+      IMPORTING
+        es_key_mapping = DATA(ls_bp1_key_mapping) ).
+    get_bp_key_mapping(
+      EXPORTING
+        iv_partner     = is_relation-partner_relation-header-object_instance-partner2-bpartner
+      IMPORTING
+        es_key_mapping = DATA(ls_bp2_key_mapping) ).
+
+    LOOP AT ls_bp1_key_mapping-receiver_key INTO DATA(ls_bp1_receiver_key).
+      IF ls_bp1_receiver_key-partner IS NOT INITIAL.
+      READ TABLE ls_bp2_key_mapping-receiver_key TRANSPORTING NO FIELDS
+        WITH KEY partner = ls_bp1_receiver_key-partner.
+      CHECK sy-subrc = 0.
+      rv_same_target_bp = abap_true.
+      RETURN.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
   METHOD taxcat_node_filter.
 
     DATA: lt_tax_filter               TYPE SORTED TABLE OF mdg_bs_bp_s_taxcat WITH UNIQUE KEY taxtype.
@@ -1841,6 +1596,5 @@ DATA:
         <ls_bs_bp_extern>-partner-central_data-taxnumber_adr-taxnumbers_adr = lt_tax_number_adr.
       ENDIF.
     ENDLOOP.
-
   ENDMETHOD.
 ENDCLASS.
